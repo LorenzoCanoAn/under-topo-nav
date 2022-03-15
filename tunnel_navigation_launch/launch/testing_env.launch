@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="world_file_path" default="/home/lorenzo/catkin_ws/src/subt_gazebo/worlds/w2.world" />
+    <arg name="topological_instructions" default="" />
+    <arg name="gui" default="true"/>
+    <arg name="obj_x" default="0"/>
+    <arg name="obj_y" default="0"/>
+
+    <rosparam param="/topological_instructions" subst_value="True">$(arg topological_instructions)</rosparam>
+    <rosparam param="/obj_x" subst_value="True">$(arg obj_x)</rosparam>
+    <rosparam param="/obj_y" subst_value="True">$(arg obj_y)</rosparam>
+
+    <include file="$(find tunnel_navigation_launch)/launch/env.launch">
+        <arg name="world_file_path" value="$(arg world_file_path)" />
+        <arg name="gui" value="$(arg gui)"/>
+    </include>
+
+    <include file="$(find tunnel_navigation_launch)/launch/nn.launch"></include>
+    
+    <node name="heading_control" pkg="heading_control" type="simple_heading_control.py" output="screen" />
+
+</launch>

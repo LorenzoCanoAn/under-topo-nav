@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="tunnel_practice_3">
+
+    <physics type="ode">
+      <max_step_size>0.0002</max_step_size>
+      <real_time_update_rate>0</real_time_update_rate>
+    </physics>
+
+    <gui fullscreen='0'>
+      <camera name='user_camera'>
+        <pose>-51.7 -49.4 62.0 0 0.5 0.8</pose>
+      </camera>
+    </gui>
+
+    <scene>
+      <ambient>0.2 0.2 0.2 1.0</ambient>
+      <background>0.34 0.39 0.43 1.0</background>
+      <grid>false</grid>
+      <origin_visual>false</origin_visual>
+    </scene>
+
+    <light name='user_spot_light_0' type='spot'>
+      <pose>0 0 500 0 0.0 0</pose>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>0.1 0.1 0.1 1</specular>
+      <direction>0 0 -1</direction>
+      <attenuation>
+        <range>100000</range>
+        <constant>0.9</constant>
+        <linear>0.000</linear>
+        <quadratic>0.000</quadratic>
+      </attenuation>
+      <cast_shadows>1</cast_shadows>
+      <spot>
+        <inner_angle>0.0</inner_angle>
+        <outer_angle>1.5</outer_angle>
+        <falloff>0.01</falloff>
+      </spot>
+    </light>
+
+{}
+
+
+  </world>
+</sdf>

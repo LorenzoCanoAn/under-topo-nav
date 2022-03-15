@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+
+<data>
+    <area label="1">
+        <x_max>281.8</x_max>
+        <x_min>278.2</x_min>
+        <y_max>41.8</y_max>
+        <y_min>38.2</y_min>
+        <z>-10.0</z>
+    </area>
+    <area label="1">
+        <x_max>41.8</x_max>
+        <x_min>38.2</x_min>
+        <y_max>1.8</y_max>
+        <y_min>-1.8</y_min>
+        <z>0.0</z>
+    </area>
+    <area label="1">
+        <x_max>81.8</x_max>
+        <x_min>78.2</x_min>
+        <y_max>-58.2</y_max>
+        <y_min>-61.8</y_min>
+        <z>0.0</z>
+    </area>
+    <area label="1">
+        <x_max>301.8</x_max>
+        <x_min>298.2</x_min>
+        <y_max>-38.2</y_max>
+        <y_min>-41.8</y_min>
+        <z>-10.0</z>
+    </area>
+    <area label="1">
+        <x_max>81.8</x_max>
+        <x_min>78.2</x_min>
+        <y_max>-98.2</y_max>
+        <y_min>-101.8</y_min>
+        <z>0.0</z>
+    </area>
+    <area label="1">
+        <x_max>61.8</x_max>
+        <x_min>58.2</x_min>
+        <y_max>-38.2</y_max>
+        <y_min>-41.8</y_min>
+        <z>0.0</z>
+    </area>
+    <area label="1">
+        <x_max>121.8</x_max>
+        <x_min>118.2</x_min>
+        <y_max>-58.2</y_max>
+        <y_min>-61.8</y_min>
+        <z>-5.0</z>
+    </area>
+    <area label="1">
+        <x_max>141.8</x_max>
+        <x_min>138.2</x_min>
+        <y_max>41.8</y_max>
+        <y_min>38.2</y_min>
+        <z>-5.0</z>
+    </area>
+    
+</data>

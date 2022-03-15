@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="world_file_path" default="/home/lorenzo/catkin_ws/src/underground_semantic_navigation_ROS/automatic_testing/tests_data/test_5_2_10/worlds/1646158362890286086.world" />
+  <arg name="gui" default="true" />
+
+
+  <!-- LAUNCH THE BASE ENVIRONMENT-->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_file_path)" />
+    <arg name="gui" value="$(arg gui)" />
+  </include>
+  
+  <include file="$(find husky_gazebo)/launch/spawn_husky_velodyne_no_ekf.launch">
+    <arg name="yaw" value="4.7" />
+    <arg name="x" value="0" />
+    <arg name="y" value="0" />
+  </include>
+
+  <!-- GMAPPING-RELATED STUFF-->
+  <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="hector_trajectory_server" output="screen">
+    <param name="target_frame_name" type="string" value="/odom" />
+    <param name="source_frame_name" type="string" value="/base_link" />
+    <param name="trajectory_update_rate" type="double" value="4" />
+    <param name="trajectory_publish_rate" type="double" value="0.25" />
+  </node>
+  <node name="odom_to_tf" pkg="tunnel_navigation_launch" type="odom_to_tf_node.py" />
+  <node pkg="gmapping" name="gmapping" type="slam_gmapping" />
+
+  <!-- REMOTE CONTROLL PACKAGES-->
+  <include file="$(find teleop_twist_joy)/launch/teleop.launch" />
+  <node pkg="teleop_twist_joy" type="teleop_node" name="teleop_node">
+    <param name="enable_button" value="4" />
+    <param name="enable_turbo_button" value="5" />
+  </node>
+
+  <!-- NEURAL NETWORK STUFF-->
+  <node name="pcl_to_img" pkg="pointcloud_to_image" type="pointcloud_to_laserscan_image.py" output="screen" />
+  <include file="$(find tunnel_navigation_launch)/launch/nn.launch" />
+
+  <!-- RVIZ -->
+  <node pkg="rviz" name="rviz" type="rviz" />
+</launch>

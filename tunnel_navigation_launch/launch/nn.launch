@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="pointcloud_nn" pkg="laserscan_image_nn" type="network_node.py" output="screen" />
+    <include file="$(find husky_navigation)/launch/exploration_demo.launch"></include>
+</launch>

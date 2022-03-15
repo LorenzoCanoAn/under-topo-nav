@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="world_file_path" default="/home/lorenzo/catkin_ws/src/subt_gazebo/worlds/w2.world"/>
+    <arg name="gui" default="true"/>
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+      <arg name="world_name" value="$(arg world_file_path)"/> 
+      <arg name="gui" value="$(arg gui)"/>
+    </include>l
+
+    <include file="$(find husky_gazebo)/launch/spawn_husky_velodyne.launch">
+      <arg name="yaw" value="4.7"/>
+    </include>
+</launch>
