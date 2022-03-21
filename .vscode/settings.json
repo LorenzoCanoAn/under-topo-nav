@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./gallery_detection/src",
+        "./dataset_generation/src"
+    ]
+}
