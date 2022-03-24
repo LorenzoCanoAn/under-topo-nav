@@ -1,4 +1,5 @@
 from subt_world_generation.tile import Tile, plot_seq_of_tiles
+import numpy as np
 import os
 
 ####################################################################################################################################
@@ -13,6 +14,7 @@ import os
 class TileTree:
     def __init__(self):
         self._scale = 1.0
+        self.tile_grid = TileGrid()
         self.tiles = []
 
     def __getitem__(self,i):
@@ -38,6 +40,7 @@ class TileTree:
 
     def add_tile(self, t1):
         self.tiles.append(t1)
+        self.tile_grid.add_tile(t1)
 
     def connect_two_tiles(self, t1, nc1, t2, nc2):
         '''Assigns the correct connectios to each 
@@ -50,13 +53,14 @@ class TileTree:
             t2.connections[t2.connections.index(t1)] == None
         t1.reset_connections()
         self.tiles.remove(t1)
+        self.tile_grid.remove_tile(t1)
 
     def check_collisions(self, tile):
-        for other_tile in self.get_tiles_in_range(tile, 20):
+        for other_tile in self.tile_grid.get_neighbors(tile):
             for bb1 in tile.bounding_boxes:
                 for bb2 in other_tile.bounding_boxes:
                     inter = bb1.as_polygon().intersection(bb2.as_polygon()).area
-                    if inter > 2: return True
+                    if inter > 3: return True
         return False
 
     def get_tiles_in_range(self, t1, r):
@@ -67,6 +71,46 @@ class TileTree:
             if t2.distance(t1) <= r:
                 t_in_range.add(t2)
         return t_in_range
+
+# -------------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------
+class TileGrid():
+    def __init__(self):
+        self.__grid = dict()
+
+    def add_tile(self, tile):
+        assert isinstance(tile, Tile)
+        coord = self.get_coord(tile)
+        try:
+            self.__grid[coord].add(tile)
+        except:
+            self.__grid[coord] = set([tile])
+    
+    def remove_tile(self, tile):
+        coord = self.get_coord(tile)
+        self.__grid[coord].remove(tile)
+
+    def get_neighbors(self, tile):
+        coord = np.array(self.get_coord(tile))
+        neighbors = set()
+        for dx in [-1,0,1]:
+            for dy in [-1,0,1]:
+                for dz in [-1,0,1]:
+                    f_coord = coord + np.array((dx,dy,dz))
+                    f_coord = tuple(f_coord)
+                    try:
+                        for t in self.__grid[f_coord]:
+                            neighbors.add(t)
+                    except:
+                        pass
+        try:
+            neighbors.remove(tile)
+        except:
+            pass
+        return neighbors
+
+    def get_coord(self, tile):
+        return tuple(np.array(tile.xyz/15).flatten().astype(int))
 
 ####################################################################################################################################
 ####################################################################################################################################

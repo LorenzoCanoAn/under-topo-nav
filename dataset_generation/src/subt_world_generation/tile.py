@@ -13,8 +13,8 @@ ALIAS = {
     "tunnel_rect": "tunnel_tile_5",
     "tunnel_t": "tunnel_intersection_t",
     "tunnel_4_way_intersection": "tunnel_tile_1",
-    "tunnel_curve": "tunnel_tile_2"
-}
+    "tunnel_curve": "tunnel_tile_2",
+    }
 
 ############################################################################################################################
 #	Loading of the yaml file with the info about the tiles
@@ -144,6 +144,12 @@ class Tile:
         if type(T) != type(None):
             self.T_M = T
 
+        for cnp in self.connection_points:
+            cnp.recalculate = True
+
+        for bb in self.bounding_boxes:
+            bb.recalculate = True
+
     @property
     def empty_connections(self):
         return [nc for nc, c in enumerate(self.connections) if c is None]
@@ -154,9 +160,11 @@ class Tile:
 
     def distance(self, other_tile):
         return np.math.sqrt(np.sum(np.square(self.xyz-other_tile.xyz)))
+
     @property
     def n_connections(self):
         return len(self.connections)
+
 # --------------------------------------------------------------------------------------------------------------------------------------
 #	 definition of the ChildGeometry class
 # --------------------------------------------------------------------------------------------------------------------------------------
@@ -164,6 +172,7 @@ class ChildGeometry:
     def __init__(self, parent, idx):
         self.parent = parent
         self.idx = idx
+        self.recalculate = True
 
     @property
     def P_T_M(self):
@@ -176,8 +185,6 @@ class ChildGeometry:
 # --------------------------------------------------------------------------------------------------------------------------------------
 #	 definition of the ConnectionPoint class
 # --------------------------------------------------------------------------------------------------------------------------------------
-
-
 class ConnectionPoint(ChildGeometry):
     key = "connection_points"
 
@@ -193,7 +200,13 @@ class ConnectionPoint(ChildGeometry):
 
     @property
     def T_M(self):
-        return self.P_T_M * self.C_T_M
+        '''Return the world transform matrix to the connection'''
+        if self.recalculate:
+            self._T_M = self.P_T_M * self.C_T_M
+            self.recalculate = False
+            return self._T_M
+        else:
+            return self._T_M
 
     def op_dir_mat(self):
         '''Returns the global transformation matrix that 
@@ -272,16 +285,16 @@ class Area(ChildGeometry):
 
     def as_polygon(self):
         return Polygon(self.area_points)
-    
 
 
 # --------------------------------------------------------------------------------------------------------------------------------------
 #	 definition of the BoundingBox class
 # --------------------------------------------------------------------------------------------------------------------------------------
-
-
 class BoundingBox(ChildGeometry):
     perimeter_key = "bounding_boxes"
+
+    def __init__(self, parent, idx):
+        super().__init__(parent, idx)
 
     @property
     def raw_perimeter_points(self):
@@ -297,10 +310,13 @@ class BoundingBox(ChildGeometry):
     def perimeter_points(self):
         '''Returns the perimeter points after moving the tile as a
         Nx3 array, N being the number of points in the perimeter'''
-        points = np.zeros([self.n_perimeter_points, 3])
-        for idx, point in enumerate(self.raw_perimeter_points):
-            points[idx, :] = transform_point(point, self.P_T_M)
-        return points
+        if self.recalculate:
+            self._points = np.zeros([self.n_perimeter_points, 3])
+            for idx, point in enumerate(self.raw_perimeter_points):
+                self._points[idx, :] = transform_point(point, self.P_T_M)
+            return self._points
+        else:
+            return self._points
 
     def as_polygon(self) -> Polygon:
         return Polygon(self.perimeter_points)
@@ -392,9 +408,11 @@ def close_list_of_points(list_of_points: np.ndarray):
 def get_random_tile():
     return Tile(random.choice(list(Tile.CD.keys())))
 
+
 def get_random_non_blocking_tile():
     no_block_list = list(Tile.CD.keys())
     no_block_list.remove(ALIAS["tunnel_block"])
+    no_block_list.remove("tunnel_wall")
     return Tile(random.choice(no_block_list))
 ############################################################################################################################
 #	Plotting Functions
@@ -403,6 +421,8 @@ def get_random_non_blocking_tile():
 # --------------------------------------------------------------------------------------------------------------------------------------
 #	 definition of the MinBorders class
 # --------------------------------------------------------------------------------------------------------------------------------------
+
+
 class MinBorders:
     '''Class that keeps track of the highest and lowest coordinates
     in a sequence of tiles for plotting purposes'''

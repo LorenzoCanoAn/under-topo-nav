@@ -1,6 +1,7 @@
 ---
 model_name: "tunnel_tile_blocker"
 color: "black"
+symetric: "false"
 connection_points:
   - [0, 3, 0, 0, 0, 1.57079632679]
 bounding_boxes:
@@ -24,6 +25,7 @@ connection_exits: [1]
 ---
 model_name: "tunnel_tile_5"
 color: "blue"
+symetric: "true"
 connection_points:
   - [0, -10, 0, 0, 0, 4.7123]
   - [0, 10, 0, 0, 0, 1.5707]
@@ -49,6 +51,7 @@ exits_of_each_area:
   - [2]
 ---
 model_name: "tunnel_intersection_t"
+symetric: "false"
 color: "orange"
 connection_points:
   - [0, 0, 0, 0, 0, 4.71238898038]
@@ -91,6 +94,7 @@ exits_of_each_area:
   - [2, 3, 4]
 ---
 model_name: "tunnel_tile_1"
+symetric: "true"
 color: "yellow"
 connection_points:
   - [0, -10, 0, 0, 0, 4.7123]
@@ -131,6 +135,7 @@ exits_of_each_area:
   - [0, 5, 6, 7]
 ---
 model_name: "tunnel_tile_2"
+symetric: "false"
 color: "green"
 connection_points:
   - [0, -10, 0, 0, 0, 4.7123]
@@ -186,3 +191,20 @@ exits_of_each_area:
   - [1, 2]
 
 exit_to_areas_relation: [0, 1]
+---
+model_name: "tunnel_wall"
+color: "black"
+symetric: "false"
+connection_points:
+  - [0.0, -0.27, 0.0, 0, 0, 1.57079632679]
+bounding_boxes:
+  - [
+      [2.8708643913269043, 0.15330028533935547, 0.0],
+      [-2.8571317195892334, 0.20073938369750977, 0.0],
+      [-2.8334131240844727, -0.27362871170043945, 0.0],
+      [2.8708653450012207, -0.33292722702026367, 0.0],
+    ]
+exits: []
+areas: []
+exits_of_each_area: []
+connection_exits: []

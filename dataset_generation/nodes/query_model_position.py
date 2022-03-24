@@ -6,7 +6,7 @@ import time
 
 
 def main():
-    model_name = "Untitled_0"
+    model_name = "Untitled"
     rospy.init_node(f"model_query_{model_name}")
     
     # Setup service

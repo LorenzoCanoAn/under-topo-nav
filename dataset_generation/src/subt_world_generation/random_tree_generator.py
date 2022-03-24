@@ -1,8 +1,7 @@
 from subt_world_generation.tile_tree import TileTree, plot_tree
-from subt_world_generation.tile import Tile, get_random_tile ,ALIAS, get_random_non_blocking_tile
+from subt_world_generation.tile import Tile, get_random_non_blocking_tile, get_random_tile, ALIAS
 import matplotlib.pyplot as plt
 import random
-from time import time_ns as ns
 # --------------------------------------------------------------------------------------------------------------------------------------
 #	 definition of the RandomTreeGenerator class
 # --------------------------------------------------------------------------------------------------------------------------------------
@@ -12,15 +11,16 @@ class RandomTreeGenerator(TileTree):
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def __init__(self):
         super().__init__()
-        self.__free_connections = set()
+        self.__free_connections = FreeConnectionsTracker(self)
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def gen_tree(self):
         tile = get_random_tile()
         self.add_tile(tile)
+        i = 0
         while len(self.free_connections) > 0:
             self.generation_step()
-
+            i += 1
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def generation_step(self):
         '''
@@ -28,37 +28,35 @@ class RandomTreeGenerator(TileTree):
         -1: tries to close all the loops posible
         -2: Adds a random tile to the rest of the open tiles
         '''
-        # TRY TO CLOSE ALL POSIBLE LOOPS
-        with open("debug.txt", "a+") as f:
-
-            loops_closed = True
-
-            a = ns()
-            for t1, nc1 in self.__free_connections:
-                if self.close_loop(t1, nc1):
-                    loops_closed = True
-                    break
-            print(len(self.__free_connections))
+        for sml_dist in self.__free_connections.small_distances:
+            t1, nc1 = sml_dist[1]
+            has_closed_loop = self.close_loop(t1, nc1)
+            if has_closed_loop:
+                break
             
-            elapsed = str((ns()-a))
-            f.write(f"{elapsed}||{len(self.__free_connections)}||\n")
-
-
-
-                
-        
-            
+        if (len(self.__free_connections)) ==0:
+            return 1
         # Select a tile to put
-        
+
+
         t2, nc2 = random.choice(self.free_connections)
-        t1 = get_random_tile()
+        t1 = get_random_non_blocking_tile()
         nc1 = random.randint(0, len(t1.connections)-1)
         self.move_add_and_connect_tile(t1, nc1, t2, nc2)
+
         if self.check_collisions(self[-1]):
             self.del_tile(self[-1])
-            self.move_add_and_connect_tile(Tile(ALIAS["tunnel_block"]),0,t2,nc2)
+            self.move_add_and_connect_tile(Tile("tunnel_wall"), 0, t2, nc2)
+
+        while len(self.free_connections) > 5:
+            self.close_random_exit()
         return 1
 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def close_random_exit(self):
+        t2, nc2 = random.choice(self.free_connections)
+        self.move_add_and_connect_tile(
+                Tile("tunnel_wall"), 0, t2, nc2)
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def add_tile(self, t1):
         '''This function only appends a tile to the list tree, and
@@ -66,20 +64,20 @@ class RandomTreeGenerator(TileTree):
         super().add_tile(t1)
         for nc1 in t1.empty_connections:
             self.__free_connections.add((t1, nc1))
-        
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     def del_tile(self, t1):
         for nc1 in t1.empty_connections:
             self.__free_connections.remove((t1, nc1))
-        
+
         for t2 in t1.neighbors:
             self.__free_connections.add((t2, t2.connections.index(t1)))
 
         super().del_tile(t1)
-        
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     def connect_two_tiles(self, t1, nc1, t2, nc2):
         '''Assigns the correct connectios to each 
         tile and updates the free connections of the tree'''
@@ -113,83 +111,45 @@ class RandomTreeGenerator(TileTree):
         return candidates
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    def make_best_connection(self, t1, nc1, t2nc2_list):
-        '''For two given open exits, finds all the tiles that connect them, if any'''
-        final_total_connections = []
-        t3 = None
-        prev_tile = None
-        for t2, nc2 in t2nc2_list:
-            p2 = t2.connection_points[nc2]
-            for t_type in Tile.CD:
-                t3 = Tile(t_type)
-                for nc3 in t3.empty_connections:
-                    # At this point, we are trying to evaluate a tile, in a certain position
-                    t3.move_to_connection(t1, nc1, nc3)
-                    # First check if the target connection has been closed
-                    for nc3_, p3_ in enumerate(t3.connection_points):
-                        if p2.distance(p3_) < 0.1:
-                            base_connection = (t3, nc3, t1, nc1)
-                            secondary_connection = (t3, nc3_, t2, nc2)
-                            # If it has been closed, check if any other t2nc2 can be connected
-                            extra_connections = []
-                            for nc3__, p3__ in enumerate(t3.connection_points):
-                                if nc3__ in [nc3_, nc3]:
-                                    continue
-                                for t2_, nc2_ in t2nc2_list:
-                                    if (t2_, nc2_) == (t2, nc2):
-                                        continue
-                                    p2_ = t2_.connection_points[nc2_]
-                                    if p2_.distance(p3__) < 0.1:
-                                        extra_connections.append(
-                                            (t3, nc3__, t2_, nc2_))
-                            total_connections = [base_connection, secondary_connection] + extra_connections
-
-                            if prev_tile is not None:
-                                self.del_tile(prev_tile)
-                            
-                            try:
-                                self.execute_connections(t3, total_connections)
-                            except:
-                                pass
-                            
-                            if self.check_collisions(t3):
-                                self.del_tile(t3)
-                                if prev_tile is not None:
-                                    self.execute_connections(
-                                        prev_tile, final_total_connections)
-                            else:
-                                final_total_connections = total_connections.copy()
-                                prev_tile = t3
-        return t3, final_total_connections
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
     def make_best_connection_v2(self, t1, nc1, t2nc2_list):
         '''For two given open exits, finds all the tiles that connect them, if any'''
         t3 = None
         final_total_connections = []
-        definitive_tile = None
         if len(t2nc2_list) == 0:
             return final_total_connections
+        if len(t2nc2_list) > 0:
+            possible_tile_types = []
+            possible_tile_types.append(ALIAS["tunnel_curve"])
+            possible_tile_types.append(ALIAS["tunnel_rect"])
+        if len(t2nc2_list) > 1:
+            possible_tile_types.append(ALIAS["tunnel_t"])
+        if len(t2nc2_list) > 2:
+            possible_tile_types.append(ALIAS["tunnel_4_way_intersection"])
 
-
-        for t_type in Tile.CD:
+        for t_type in possible_tile_types:
             t3 = Tile(t_type)
-            for nc3 in range(t3.n_connections):
+            if t3.params["symetric"]:
+                iterator = range(1)
+            else:
+                iterator = range(t3.n_connections)
+            for nc3 in iterator:
                 current_cand_possible_connections = []
                 t3.move_to_connection(t1, nc1, nc3)
                 if self.check_collisions(t3):
-                    continue                
-                
+                    continue
+
                 for nc3_, p3_ in enumerate(t3.connection_points):
-                    if nc3_ == nc3: continue
+                    if nc3_ == nc3:
+                        continue
                     for t2, nc2 in t2nc2_list:
                         p2 = t2.connection_points[nc2]
                         if p3_.distance(p2) < 0.1:
-                            current_cand_possible_connections.append((t3,nc3_,t2,nc2))
-
+                            current_cand_possible_connections.append(
+                                (t3, nc3_, t2, nc2))
 
                 if len(current_cand_possible_connections) > 0:
-                    current_cand_possible_connections.append((t3,nc3,t1,nc1))
+                    current_cand_possible_connections.append(
+                        (t3, nc3, t1, nc1))
 
                 if len(final_total_connections) < len(current_cand_possible_connections):
                     final_total_connections = current_cand_possible_connections.copy()
@@ -197,16 +157,19 @@ class RandomTreeGenerator(TileTree):
                         self.execute_connections(final_total_connections)
                         return final_total_connections
 
-        self.execute_connections(final_total_connections)     
+        self.execute_connections(final_total_connections)
         return final_total_connections
 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def close_loop(self, t1, nc1):
-        t2nc2_list = self.get_loop_closure_candidate_connections(t1, nc1)
+        t2nc2_list = self.__free_connections.get_close_conn((t1, nc1))
         connections = self.make_best_connection_v2(t1, nc1, t2nc2_list)
+
         if len(connections) > 0:
             return True
         return False
 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def execute_connections(self, connections):
         '''
         - tile is suposed to be already moved
@@ -215,33 +178,77 @@ class RandomTreeGenerator(TileTree):
 
         for i, (t1, nc1, t2, nc2) in enumerate(connections):
             if i == 0:
-                self.move_add_and_connect_tile(t1,nc1,t2,nc2)
+                self.move_add_and_connect_tile(t1, nc1, t2, nc2)
             else:
                 self.connect_two_tiles(t1, nc1, t2, nc2)
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def pose_of_connection(self, p_tile, conn):
         '''Given the tile_idx and the connection in said tile, returns
         the position of the connection'''
         p_conn_pose = p_tile.connection_points[conn]
         return p_conn_pose
+
+# -------------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------
+class FreeConnectionsTracker(set):
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def __init__(self, parent, __iterable=set()) -> None:
+        super().__init__(__iterable)
+        self.small_distances = set()
+        self.parent = parent
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def add(self, __element) -> None:
+        for conn in self:
+            if __element[0] == conn[0]:
+                pass
+            elif __element[0].connection_points[__element[1]].distance(conn[0].connection_points[conn[1]]) < 20 * self.parent._scale:
+                self.small_distances.add((conn, __element))
+        super().add(__element)
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def remove(self, __element) -> None:
+        to_remove = set()
+
+        for r in self.small_distances:
+            if __element in r:
+                to_remove.add(r)
+        for r in to_remove:
+            self.small_distances.remove(r)
+
+        super().remove(__element)
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def get_close_conn(self, c1):
+        close = set()
+        for c1c2 in self.small_distances:
+            if c1 in c1c2: 
+                c1c2_l = list(c1c2)
+                c1c2_l.remove(c1)
+                close.add(c1c2_l[0])
+        return close
+    
+
 ####################################################################################################################################
 ####################################################################################################################################
 #		FUNCTIONS
 ####################################################################################################################################
 ####################################################################################################################################
 
-#	 definition of the random_tile_type function
+
 # -----------------------------------------------------------------------------------------------------------------------------------
-
-
 def random_tile_type():
     """Returns a random selection of the types of intersections"""
     lista_de_tipos = Tile.CD.keys()
     return random.choice(lista_de_tipos)
 
+# -----------------------------------------------------------------------------------------------------------------------------------
+
+
 def plot_random_tree(tree, bounding_boxes=True, areas=False, exits=False, connections=False):
-    plot_tree(tree, bounding_boxes=bounding_boxes, areas=areas, exits=exits, connections=connections)
+    plot_tree(tree, bounding_boxes=bounding_boxes, areas=areas,
+              exits=exits, connections=connections)
     assert isinstance(tree, RandomTreeGenerator)
     for t, c in tree.free_connections:
         p = t.connection_points[c]
