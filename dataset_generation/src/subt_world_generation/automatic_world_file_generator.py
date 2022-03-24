@@ -1,6 +1,6 @@
 from math import sqrt
 import threading
-from world_file_generation.tile import TileTree
+from subt_world_generation.tile import TileTree
 import random
 from datetime import datetime
 import os

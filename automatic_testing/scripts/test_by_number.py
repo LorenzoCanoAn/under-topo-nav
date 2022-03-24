@@ -9,9 +9,9 @@ import subprocess
 from topographic_map_from_world_tree import topological_graph_from_world_tree
 from mine_topological_map.graph import Graph
 from mine_topological_map.drawing import GraphDrawing
-from world_file_generation.tile import Tile, TileTree
+from subt_world_generation.tile import Tile, TileTree
 
-from world_file_generation.automatic_world_file_generator import AutoMapGenerator
+from subt_world_generation.automatic_world_file_generator import AutoMapGenerator
 
 class Tester:
     def __init__(self, testing_run):

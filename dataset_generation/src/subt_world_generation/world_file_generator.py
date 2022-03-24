@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt
-import world_file_generation.tile as tl
+import subt_world_generation.tile as tl
 import pickle
 
 import geometry_msgs.msg as ros_geom_msgs
