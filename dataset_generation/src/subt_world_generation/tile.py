@@ -14,6 +14,7 @@ ALIAS = {
     "tunnel_t": "tunnel_intersection_t",
     "tunnel_4_way_intersection": "tunnel_tile_1",
     "tunnel_curve": "tunnel_tile_2",
+    "tunnel_wall":"hatch"
     }
 
 ############################################################################################################################
@@ -76,7 +77,7 @@ class Tile:
 
     @property
     def uri(self):
-        return self.params["model_name"]
+        return "model://" + self.params["model_name"]
 
     @classmethod
     def scale(cls, new_scale):
@@ -412,7 +413,7 @@ def get_random_tile():
 def get_random_non_blocking_tile():
     no_block_list = list(Tile.CD.keys())
     no_block_list.remove(ALIAS["tunnel_block"])
-    no_block_list.remove("tunnel_wall")
+    no_block_list.remove("hatch")
     return Tile(random.choice(no_block_list))
 ############################################################################################################################
 #	Plotting Functions

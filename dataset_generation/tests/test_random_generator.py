@@ -2,7 +2,7 @@ from threading import Thread
 import random
 from subt_world_generation.random_tree_generator import RandomTreeGenerator, plot_random_tree
 import matplotlib.pyplot as plt
-import cProfile
+from subt_world_generation.tile_tree import save_tree_as_world_file
 random.seed(0)
 
 def generator_thread():
@@ -11,6 +11,7 @@ def generator_thread():
     tree = RandomTreeGenerator()
     tree.gen_tree()
     plot_random_tree(tree)
+    save_tree_as_world_file(tree,"/home/lorenzo/data/tile_trees/tests/test.world")
 
 def main():
     plt.figure(figsize=(10,10))

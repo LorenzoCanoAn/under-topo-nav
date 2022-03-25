@@ -120,8 +120,6 @@ class TileGrid():
 
 #	 plot_tree function
 # ----------------------------------------------------------------------------------------------------------------------------------
-
-
 def plot_tree(tile_tree, bounding_boxes=True, areas=True, exits=True, connections=True):
     plot_seq_of_tiles(list(tile_tree.tiles), bounding_boxes=bounding_boxes, areas=areas, exits=exits, connections=connections)
 
@@ -133,21 +131,34 @@ def plot_tree(tile_tree, bounding_boxes=True, areas=True, exits=True, connection
 #	Stablish the path to necessary files
 TILE_DEFINITION_FILE_PATH = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "data_files/urdf_template_files/base_of_tile_definition.txt")
-BOILERPLATE_FILE_PATH = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "data_files/urdf_template_files/boilerplate.txt")
+WORLD_DEFINITION_FILE_PATH = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "data_files/urdf_template_files/base_world_file.txt")
 OBSTACLE_DEFINITION_FILE_PATH = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "data_files/urdf_template_files/obstacle.txt")
 
 
-def tile_to_text(tile: Tile) -> str:
+def tile_to_text(tile: Tile, idx = "") -> str:
     assert isinstance(tile, Tile)
     with open(TILE_DEFINITION_FILE_PATH, "r") as f:
         raw_text = f.read()
-    return raw_text.format(tile.idx, tile.xyzrot, tile.uri)
+    pose = str(tile.xyzrot).replace(",","")
+    pose = pose.replace("[","").replace("]","")
+    print(pose)
+    return raw_text.format(idx, pose, tile.uri)
 
 
 def tree_tiles_to_text(tree: TileTree):
     text = []
-    for tile in tree.tiles:
-        text.append(tile_to_text(tile))
+    for idx, tile in enumerate(tree.tiles):
+        text.append(tile_to_text(tile,idx=idx))
     return "".join(text)
+
+def tree_to_text(tree: TileTree):
+    tiles_text = tree_tiles_to_text(tree)
+    with open(WORLD_DEFINITION_FILE_PATH, "r") as f:
+        raw_text = f.read()
+    return raw_text.format(tiles_text)
+
+def save_tree_as_world_file(tree, save_path):
+    with open(save_path, "w+") as f:
+        f.write(tree_to_text(tree))

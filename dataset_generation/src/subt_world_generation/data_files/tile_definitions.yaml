@@ -192,7 +192,7 @@ exits_of_each_area:
 
 exit_to_areas_relation: [0, 1]
 ---
-model_name: "tunnel_wall"
+model_name: "hatch"
 color: "black"
 symetric: "false"
 connection_points:
