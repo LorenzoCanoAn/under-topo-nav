@@ -1,4 +1,4 @@
-from subt_world_generation.tile import Tile, plot_seq_of_tiles
+from subt_world_generation.tile import Tile, plot_seq_of_tiles, BLOCK_TILES
 import numpy as np
 import os
 
@@ -25,8 +25,8 @@ class TileTree:
 
     def set_scale(self, scale):
         '''This funciton changes the scale of the definitions of all the tiles'''
-        Tile.scale(scale / self._scale)
         self._scale = scale
+        Tile.scale(self._scale)
 
     def move_add_and_connect_tile(self, t1, nc1, t2, nc2):
         '''Moves 1 as if connected to 1, then adds it to the tree'''
@@ -63,14 +63,13 @@ class TileTree:
                     if inter > 3: return True
         return False
 
-    def get_tiles_in_range(self, t1, r):
-        t_in_range = set()
-        for t2 in self.tiles:
-            if t2 == t1:
-                continue
-            if t2.distance(t1) <= r:
-                t_in_range.add(t2)
-        return t_in_range
+    @property
+    def non_blocking_tiles(self):
+        self._non_blocking_tiles = set()
+        for t in self:
+            if not t.params["model_name"] in BLOCK_TILES:
+                self._non_blocking_tiles.add(t)
+        return self._non_blocking_tiles
 
 # -------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------------------------
@@ -143,7 +142,6 @@ def tile_to_text(tile: Tile, idx = "") -> str:
         raw_text = f.read()
     pose = str(tile.xyzrot).replace(",","")
     pose = pose.replace("[","").replace("]","")
-    print(pose)
     return raw_text.format(idx, pose, tile.uri)
 
 

@@ -1,3 +1,4 @@
+from math import ceil
 import random
 from matplotlib import pyplot as plt
 import numpy as np
@@ -6,30 +7,33 @@ from shapely.geometry import Polygon
 from shapely import affinity
 from scipy.spatial.transform import Rotation
 import os.path
+import os
 
 
 ALIAS = {
     "tunnel_block": "tunnel_tile_blocker",
     "tunnel_rect": "tunnel_tile_5",
-    "tunnel_t": "tunnel_intersection_t",
+    "tunnel_t": "my_t",
     "tunnel_4_way_intersection": "tunnel_tile_1",
     "tunnel_curve": "tunnel_tile_2",
-    "tunnel_wall":"hatch"
-    }
+    "tunnel_wall": "hatch"
+}
+BLOCK_TILES = {"tunnel_tile_blocker", "hatch"}
 
 ############################################################################################################################
 #	Loading of the yaml file with the info about the tiles
 ############################################################################################################################
-PATH_TO_YAML = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "data_files/tile_definitions.yaml")
+PATH_TO_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "data_files/tile_definition_files")
 tile_definitions = {}
-
-with open(PATH_TO_YAML, "r") as f:
-    raw_yaml = yaml.safe_load_all(f)
-    for doc in raw_yaml:
-        if type(doc) == dict:
-            tile_definitions[doc["model_name"]] = doc
-
+files_in_dir = os.listdir(PATH_TO_DIR)
+for file in files_in_dir:
+    path_to_yaml = os.path.join(PATH_TO_DIR, file)
+    with open(path_to_yaml, "r") as f:
+        raw_yaml = yaml.safe_load_all(f)
+        for doc in raw_yaml:
+            if type(doc) == dict:
+                tile_definitions[doc["model_name"]] = doc
 ####################################################################################################################################
 ####################################################################################################################################
 #		CLASSES DEFINITIONS
@@ -43,13 +47,9 @@ with open(PATH_TO_YAML, "r") as f:
 
 class Tile:
     CD = tile_definitions
-
-    def __init__(self, i_type, i_scale=1, tree=None):
+    _scale = 1
+    def __init__(self, i_type):
         self.params = self.CD[i_type]
-        self.scale(i_scale)
-        # Check parameters
-        assert len(self.params["exits_of_each_area"]
-                   ) == len(self.params["areas"])
 
         # Initialise all parameters that must change if the tile is moved
         self.T_M = np.matrix(
@@ -62,14 +62,21 @@ class Tile:
         self.bounding_boxes = []
         for i in range(len(self.params["bounding_boxes"])):
             self.bounding_boxes.append(BoundingBox(self, i))
-        # Initialise areas
-        self.areas = []
-        for i in range(len(self.params["areas"])):
-            self.areas.append(Area(self, i))
 
         # Initialise an empty list of connections
         self.connections = [None for _ in range(
             len(self.params["connection_points"]))]
+        
+        # Initialise the tunnel axis
+        self.axis = []
+        for i in range(len(self.params["tunnel_axis"])):
+            self.axis.append(TunnelAxis(self, i))
+    @property
+    def is_block(self):
+        try:
+            return bool(self.params["is_block"])
+        except:
+            return False
 
     def reset_connections(self):
         self.connections = [None for _ in range(
@@ -81,18 +88,19 @@ class Tile:
 
     @classmethod
     def scale(cls, new_scale):
-        if new_scale != 1:
-            for tile_type in cls.CD.keys():
-                params = cls.CD[tile_type]
-                k = "connection_points"
-                for i in range(len(params[k])):
-                    params[k][i][0] *= new_scale
-                    params[k][i][1] *= new_scale
-                    params[k][i][2] *= new_scale
-                for k in ["bounding_boxes", "exits", "areas"]:
-                    params[k] = recursive_scaling(new_scale, params[k])
-                k = "model_name"
-                params[k] = str(new_scale) + params[k]
+        cls._scale = new_scale / cls._scale
+        for tile_type in cls.CD.keys():
+            params = cls.CD[tile_type]
+            k = "connection_points"
+            for i in range(len(params[k])):
+                params[k][i][0] *= cls._scale
+                params[k][i][1] *= cls._scale
+                params[k][i][2] *= cls._scale
+            for k in ["bounding_boxes"]:
+                params[k] = recursive_scaling(cls._scale, params[k])
+            for k in ["tunnel_axis"]:
+                params[k] = recursive_scaling(cls._scale, params[k])
+           
 
     def connect_and_move(self, t2, nc2, nc):
         '''Connects this tile to the parent tile. The parent tile must be a Tile instance.
@@ -151,6 +159,9 @@ class Tile:
         for bb in self.bounding_boxes:
             bb.recalculate = True
 
+        for axs in self.axis:
+            axs.recalculate = True
+
     @property
     def empty_connections(self):
         return [nc for nc, c in enumerate(self.connections) if c is None]
@@ -167,8 +178,9 @@ class Tile:
         return len(self.connections)
 
 # --------------------------------------------------------------------------------------------------------------------------------------
-#	 definition of the ChildGeometry class
 # --------------------------------------------------------------------------------------------------------------------------------------
+
+
 class ChildGeometry:
     def __init__(self, parent, idx):
         self.parent = parent
@@ -184,8 +196,9 @@ class ChildGeometry:
         return self.parent.params[key][self.idx]
 
 # --------------------------------------------------------------------------------------------------------------------------------------
-#	 definition of the ConnectionPoint class
 # --------------------------------------------------------------------------------------------------------------------------------------
+
+
 class ConnectionPoint(ChildGeometry):
     key = "connection_points"
 
@@ -231,66 +244,14 @@ class ConnectionPoint(ChildGeometry):
         return self.T_M[:3, -1]
 
     def distance(self, other_connection):
+        '''Returns the distance from this connection point to
+        other connection point'''
         return np.math.sqrt(np.sum(np.square(self.xyz-other_connection.xyz)))
 
 # --------------------------------------------------------------------------------------------------------------------------------------
-#	 definition of the Area class
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
-class Area(ChildGeometry):
-    area_key = "areas"
-    exit_key = "exits"
-    connection_areas_key = "connection_exits"
-    exit_relation_key = "exits_of_each_area"
-
-    @property
-    def raw_exits(self):
-        '''Returns the exits for this area before moving the tile
-        as a an Nx3 array, N being the number of exits'''
-        raw_exts = np.reshape(
-            np.array(self.parent.params[self.exit_key]), [-1, 3])
-        return raw_exts[self.params(self.exit_relation_key), :]
-
-    @property
-    def n_exits(self):
-        return len(self.raw_exits)
-
-    @property
-    def exits(self):
-        '''Returns the exits of the area after moving the tile as 
-            an Nx3 array, N being the number of exits'''
-        exits = np.zeros([self.n_exits, 3])
-        for idx, ext in enumerate(self.raw_exits):
-            exits[idx, :] = transform_point(ext, self.P_T_M)
-        return exits
-
-    @property
-    def raw_area_points(self):
-        '''Returns the area points before moving the tile as a 
-        Nx3 array, N being the number of points in the area'''
-        return np.array(self.params(self.area_key))
-
-    @property
-    def n_area_points(self):
-        return len(self.raw_area_points)
-
-    @property
-    def area_points(self):
-        '''Returns the area points after moving the tile as a
-        Nx3 array, N being the number of points in the area'''
-        points = np.zeros([self.n_area_points, 3])
-        for idx, point in enumerate(self.raw_area_points):
-            points[idx, :] = transform_point(point, self.P_T_M)
-        return points
-
-    def as_polygon(self):
-        return Polygon(self.area_points)
-
-
-# --------------------------------------------------------------------------------------------------------------------------------------
-#	 definition of the BoundingBox class
-# --------------------------------------------------------------------------------------------------------------------------------------
 class BoundingBox(ChildGeometry):
     perimeter_key = "bounding_boxes"
 
@@ -322,6 +283,86 @@ class BoundingBox(ChildGeometry):
     def as_polygon(self) -> Polygon:
         return Polygon(self.perimeter_points)
 
+# -----------------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------------------
+
+
+class TunnelAxis(ChildGeometry):
+    key = "tunnel_axis"
+
+    def __init__(self, parent, idx, res=0.5):
+        super().__init__(parent, idx)
+        self.res = res
+        self.set_n_intermediate_points()
+
+    @property
+    def raw_segment_points(self):
+        return np.array(self.params(self.key))
+
+    @property
+    def n_segment_points(self):
+        return len(self.raw_segment_points)
+
+    @property
+    def n_segments(self):
+        return self.n_segment_points-1
+
+    @property
+    def segment_points(self):
+        if self.recalculate:
+            self._segment_points = np.zeros([self.n_segment_points, 3])
+            for idx, point in enumerate(self.raw_segment_points):
+                self._segment_points[idx, :] = transform_point(point, self.P_T_M)
+            return self._segment_points
+        else:
+            return self._segment_points
+
+    def set_n_intermediate_points(self):
+        total_extra_points = 0
+        self.segment_info = []
+        for ns in range(self.n_segments):
+            d = np.math.sqrt(np.square(np.sum(self.raw_segment_points[ns]-self.raw_segment_points[ns+1])))
+            segment_extra_points = ceil(d/self.res) - 2 
+            total_extra_points += segment_extra_points
+            self.segment_info.append(segment_extra_points)
+        total_n_points = total_extra_points + self.n_segment_points
+        self._points = np.zeros((total_n_points,3))
+    
+    @property
+    def n_points(self):
+        return len(self._points)
+    
+    @property
+    def points(self):
+        '''This funciton is to be called once, after the tile has reached its final 
+        location. It will generate intermediate points between the ones that define
+        the segments'''
+        if self.recalculate:
+            idx = 0
+            for ns in range(self.n_segments):
+                self._points[idx,:] = self.segment_points[ns]
+                idx+=1
+                nsp = self.segment_info[ns]
+                u = (self.segment_points[ns+1] - self.segment_points[ns])/nsp
+                intra_segment_points = np.multiply(np.reshape(np.arange(1,nsp+0.01,1),(-1,1)), np.reshape(u,(1,3))) + self.segment_points[ns]
+                self._points[idx:idx+nsp,:] = intra_segment_points
+                idx +=nsp
+            self._points[-1,:] = self.segment_points[-1]
+            return self._points
+        else:
+            return self._points
+    
+    @property
+    def x(self):
+        return self.points[:,0]
+    @property
+    def y(self):
+        return self.points[:,1]
+    @property
+    def z(self):
+        return self.points[:,2]
+            
+
 ############################################################################################################################
 ############################################################################################################################
 #		FUNCTIONS
@@ -332,36 +373,37 @@ class BoundingBox(ChildGeometry):
 #	Geometry functions
 ############################################################################################################################
 
-#	 definition of the xyzrot_to_TM function
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
 def xyzrot_to_TM(xyzrot):
+    '''Transforms a [x,y,z,roll,pitch,yaw] vector to a transformation matrix'''
     assert len(xyzrot) == 6
     r = np.matrix(Rotation.from_euler("xyz", xyzrot[-3:]).as_dcm())
     p = np.matrix(xyzrot[:3]).T
     return np.vstack([np.hstack([r, p]), np.matrix([0, 0, 0, 1])])
 
-#	 definition of the TM_to_xyzrot function
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
 def TM_to_xyzrot(TM):
+    '''Transforms a transformation matrix to a [x,y,z,roll,pitch,yaw] vector'''
     r = list(np.array(Rotation.from_dcm(TM[:3, :3]).as_euler("xyz")).flatten())
     p = list(np.array(TM[:3, -1]).flatten())
     return p + r
 
-
-#	 definition of the scale_geom function
 # --------------------------------------------------------------------------------------------------------------------------------------
+
+
 def scale_geom(geom, scale):
+    '''Wraper for the affinity.scale function from the shapely module, 
+    so that all the dimensions are scaled equaly'''
     return affinity.scale(geom,
                           xfact=scale,
                           yfact=scale,
                           zfact=scale,
                           origin=(0, 0, 0))
 
-#	 definition of the transform_point function
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -382,7 +424,6 @@ def transform_point(point, T):
 #	Data treatment functions
 ############################################################################################################################
 
-#	 definition of the transform_point function
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -394,7 +435,6 @@ def recursive_scaling(scale, iterable):
             iterable[i] *= scale
     return iterable
 
-#	 definition of the transform_point function
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -406,21 +446,22 @@ def close_list_of_points(list_of_points: np.ndarray):
     return np.vstack([list_of_points, new_line])
 
 
+# --------------------------------------------------------------------------------------------------------------------------------------
 def get_random_tile():
     return Tile(random.choice(list(Tile.CD.keys())))
 
 
+# --------------------------------------------------------------------------------------------------------------------------------------
 def get_random_non_blocking_tile():
     no_block_list = list(Tile.CD.keys())
     no_block_list.remove(ALIAS["tunnel_block"])
     no_block_list.remove("hatch")
     return Tile(random.choice(no_block_list))
+
 ############################################################################################################################
 #	Plotting Functions
 ############################################################################################################################
-
 # --------------------------------------------------------------------------------------------------------------------------------------
-#	 definition of the MinBorders class
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -458,11 +499,10 @@ class MinBorders:
         of the plotting axis so that the whole tree fits'''
         return self.min_x-1, self.min_y-1, self.max_x+1, self.max_y+1
 
-#	 definition of the plot_tile function
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
-def plot_tile(tile, bounding_boxes=True, areas=True, exits=True, connections=True):
+def plot_tile(tile, bounding_boxes=True, connections=True, tunnel_axis = True):
     '''Takes a tile as input and sents de matplotlib commands to plot the different 
     components.'''
     assert isinstance(tile, Tile)
@@ -473,27 +513,19 @@ def plot_tile(tile, bounding_boxes=True, areas=True, exits=True, connections=Tru
             points = close_list_of_points(points)
             plt.plot(points[:, 0], points[:, 1], c="b")
             min_borders = MinBorders(points)
-    if areas:
-        for area in tile.areas:
-            assert isinstance(area, Area)
-            points = area.area_points
-            points = close_list_of_points(points)
-            plt.plot(points[:, 0], points[:, 1], c="r")
-            min_borders.update_with_points(points)
-            if exits:
-                points = area.exits
-                points = close_list_of_points(points)
-                plt.scatter(points[:, 0], points[:, 1], c="g")
-                min_borders.update_with_points(points)
+
+    if tunnel_axis:
+        for axs in tile.axis:
+            plt.scatter(axs.x, axs.y, c="r")
+
     if connections:
         for cnp in tile.connection_points:
             assert isinstance(cnp, ConnectionPoint)
             plt.scatter(cnp.x, cnp.y, c="k")
-            min_borders.update_with_values(cnp.x, cnp.y)
+
 
     return min_borders
 
-#	 definition of the plot_seq_of_tiles function
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -502,10 +534,10 @@ def plot_seq_of_tiles(seq_of_tiles, bounding_boxes=True, areas=True, exits=True,
     for idx, tile in enumerate(seq_of_tiles):
         if idx == 0:
             borders = plot_tile(
-                tile, bounding_boxes=bounding_boxes, areas=areas, exits=exits, connections=connections)
+                tile, bounding_boxes=bounding_boxes, connections=connections)
         else:
             borders.update_with_other_instance(plot_tile(
-                tile, bounding_boxes=bounding_boxes, areas=areas, exits=exits, connections=connections))
+                tile, bounding_boxes=bounding_boxes, connections=connections))
 
     min_x, min_y, max_x, max_y = borders.borders
 

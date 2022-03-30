@@ -8,7 +8,7 @@ import random
 # --------------------------------------------------------------------------------------------------------------------------------------
 class RandomTreeGenerator(TileTree):
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    def __init__(self,max_fronts = 10, max_tiles = 200):
+    def __init__(self, max_tiles = 200):
         super().__init__()
         self.__free_connections = FreeConnectionsTracker(self)
         self.max_tiles = max_tiles
@@ -30,10 +30,8 @@ class RandomTreeGenerator(TileTree):
         -2: Adds a random tile to the rest of the open tiles
         '''
         self.close_all_loops()
-
         if (len(self.__free_connections)) ==0:
             return 1
-        
         t2, nc2 = random.choice(self.free_connections)
         t1 = get_random_non_blocking_tile()
         nc1 = random.randint(0, len(t1.connections)-1)
@@ -41,10 +39,7 @@ class RandomTreeGenerator(TileTree):
         if self.check_collisions(self[-1]):
             self.del_tile(self[-1])
             self.move_add_and_connect_tile(Tile("hatch"), 0, t2, nc2)
-
         self.close_all_loops()
-
-        
         return 1
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -135,7 +130,7 @@ class RandomTreeGenerator(TileTree):
                         continue
                     for t2, nc2 in t2nc2_list:
                         p2 = t2.connection_points[nc2]
-                        if p3_.distance(p2) < 0.3:
+                        if p3_.distance(p2) < 1:
                             current_cand_possible_connections.append(
                                 (t3, nc3_, t2, nc2))
 
@@ -195,7 +190,7 @@ class FreeConnectionsTracker(set):
         for conn in self:
             if __element[0] == conn[0]:
                 pass
-            elif __element[0].connection_points[__element[1]].distance(conn[0].connection_points[conn[1]]) < 20 * self.parent._scale:
+            elif __element[0].connection_points[__element[1]].distance(conn[0].connection_points[conn[1]]) < 25 * self.parent._scale:
                 self.small_distances.add((conn, __element))
         super().add(__element)
 

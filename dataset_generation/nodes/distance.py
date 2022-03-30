@@ -6,8 +6,9 @@ import time
 
 
 def main():
-    model_name = "Untitled"
-    rospy.init_node(f"model_query_{model_name}")
+    ref_name = "Untitled"
+    measure_name = "Untitled_clone"
+    rospy.init_node(f"distance_measureing")
     
     # Setup service
     rospy.wait_for_service("/gazebo/get_model_state")
@@ -16,15 +17,15 @@ def main():
     super_output_string = "["
     inner_string = "["
     while 1:
-        msg = input()
-        if msg == "b":
-            break
-        request = GetModelStateRequest(model_name,"")
-        r = proxy.call(request)
-        assert isinstance(r, GetModelStateResponse)
-        p = r.pose.position
-        o = r.pose.orientation
-        pose_string = f"[{p.x:0.2f},{p.y:0.2f},{p.z:0.2f}],"
+        
+        r_ref = GetModelStateRequest(ref_name,"")
+        meas_req = GetModelStateRequest(measure_name,"")
+        r_ref = proxy.call(r_ref)
+        r_meas = proxy.call(meas_req)
+
+        p_ref = r_ref.pose.position
+        p_meas = r_meas.pose.position
+        pose_string = f"[{p_ref.x - p_meas.x:0.2f},{p_ref.y- p_meas.y:0.2f},{p_ref.z- p_meas.z:0.2f}],"
         print(pose_string)
         inner_string += pose_string
         if msg == "a":
