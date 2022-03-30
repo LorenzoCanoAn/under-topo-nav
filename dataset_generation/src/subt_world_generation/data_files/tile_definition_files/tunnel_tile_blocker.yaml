@@ -4,6 +4,7 @@ color: "black"
 symetric: "false"
 connection_points:
   - [0, 3, 0, 0, 0, 1.57079632679]
+conn_to_axis: []
 bounding_boxes:
   - [
       [3.1706347465515137, 3.15802001953125, 0.5],
