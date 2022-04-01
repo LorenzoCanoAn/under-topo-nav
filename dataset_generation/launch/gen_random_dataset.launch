@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="world_name" default="r_1648714192440489274_s1.0"/>
+    <arg name="n_samples_per_tile" default="5000"/>
+    <arg name="worlds_folder" value="/home/lorenzo/catkin_data/worlds"/>
+    <arg name="world_file_path" value="$(arg worlds_folder)/$(arg world_name)/gazebo.world"/>
+
+    <param name="/world_name" type="str" value="$(arg world_name)" />
+    <param name="/n_samples_per_tile" type="str" value="$(arg n_samples_per_tile)" />
+
+
+    <include file="$(find tunnel_navigation_launch)/launch/env.launch">
+        <arg name="world_file_path" value="$(arg world_file_path)"/> 
+    </include>
+
+    <node name="dataset_generator" pkg="dataset_generation" type="gallery_detection_2d_dataset_collector.py" output="screen" respawn="false">
+        <remap from="image_topic" to="/lidar_image"/>
+        <param name="world_name" type="str" value="$(arg world_name)" />
+        <param name="n_samples_per_tile" type="str" value="$(arg n_samples_per_tile)" />
+    </node>
+</launch>

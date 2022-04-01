@@ -45,10 +45,10 @@ class ptcl_to_angle_depth_image:
     def __call__(self, msg: PointCloud2):
         point_array = np.array(list(pc2.read_points(
             msg, field_names=("x", "y", "z"), skip_nans=True))) * 1
-
-        theta_angles_deg = 359 - \
-            ((np.arctan2(point_array[:, 1], point_array[:, 0])
-                * 180/np.pi + 360 + 180) % 360).astype(int)
+        theta_angles = np.arctan2(point_array[:, 1], point_array[:, 0])
+        theta_angles_deg = theta_angles * 180/np.pi
+        theta_angles_shifted = 359 - ((theta_angles_deg+ 360 + 180) % 360)
+        theta_angles_double = (theta_angles_shifted*2).astype(int)
 
         distance_to_z_axis = np.linalg.norm(point_array[:, 0:2], axis=1)
         tangent = np.reshape(
@@ -56,14 +56,11 @@ class ptcl_to_angle_depth_image:
         delta_angles_deg = (
             15-(np.round(np.arctan(tangent) / np.math.pi * 180)+15)/2).astype(int).flatten()
 
-        distances = np.linalg.norm(point_array, axis=1)
-        distances /= np.max(distances)
-        distances *= 255
-        distances = distances.astype("uint8")
+        distances = np.linalg.norm(point_array, axis=1).astype("float32")
+        
+        image = np.zeros((self.n_rays, 360*2)).astype("float32")
 
-        image = np.zeros((self.n_rays, 360)).astype("uint8")
-
-        image[delta_angles_deg, theta_angles_deg] = distances
+        image[delta_angles_deg, theta_angles_double] = distances
 
         return image
 

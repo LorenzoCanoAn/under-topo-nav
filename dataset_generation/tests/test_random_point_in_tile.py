@@ -3,19 +3,33 @@ from subt_dataset_generation.training_points_2d import random_points_in_tile_tre
 from subt_world_generation.tile_tree import TileTree, plot_tree
 from subt_world_generation.tile import ALIAS, Tile
 from time import time_ns as ns
+from subt_dataset_generation.training_points_2d import random_points_in_tile
+import threading
 
 def main():
     tree = gen_tree()
-    pts = random_points_in_tile_tree(tree, 1000)
-    plt.figure(figsize=(10, 10))
-    plot_tree(tree)
-    plt.scatter(pts[0, :], pts[1, :])
+    p, o, l = random_points_in_tile_tree(tree,5)
+    t = threading.Thread(target=fuck,args=[tree, p,l])
+    t.start()
     plt.show()
+    t.join()
+
+def fuck(tree , p, l):
+    i=0
+    while i < 100:
+        input()
+        i+=5
+        f1 = plt.figure(figsize=(10,10))
+        plot_tree(tree,tunnel_axis=False)
+        plt.scatter(p[0,i],p[1,i],c="r")
+        f2 = plt.figure()
+        plt.plot(l[:,i])
+        plt.show()
 
 
 def gen_tree():
     tile_tree = TileTree()
-    tile_tree.set_scale(2)
+    tile_tree.set_scale(1)
     tile_tree.add_tile(Tile(ALIAS["tunnel_4_way_intersection"]))
 
     tile_tree.move_add_and_connect_tile(

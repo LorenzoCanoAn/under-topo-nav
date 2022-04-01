@@ -21,13 +21,13 @@
     </scene>
 
     <light name='user_spot_light_0' type='spot'>
-      <pose>0 0 500 0 0.0 0</pose>
+      <pose>0 0 2000 0 0.0 0</pose>
       <diffuse>1 1 1 1</diffuse>
       <specular>0.1 0.1 0.1 1</specular>
       <direction>0 0 -1</direction>
       <attenuation>
         <range>100000</range>
-        <constant>0.9</constant>
+        <constant>0.3</constant>
         <linear>0.000</linear>
         <quadratic>0.000</quadratic>
       </attenuation>

@@ -1,7 +1,8 @@
+from copyreg import pickle
 from subt_world_generation.tile import Tile, plot_seq_of_tiles, BLOCK_TILES
 import numpy as np
 import os
-
+import pickle
 ####################################################################################################################################
 ####################################################################################################################################
 #		CLASSES
@@ -71,6 +72,18 @@ class TileTree:
                 self._non_blocking_tiles.add(t)
         return self._non_blocking_tiles
 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def full_save(self, path):
+        '''This funciton saves a copy of the tree as a pickle file and
+        the gazebo.world version so that it can be loaded to gazebo'''
+        if not os.path.exists(path):
+            os.mkdir(path)
+        world_file_path = os.path.join(path,"gazebo.world")
+        tree_file_path = os.path.join(path,"tree.pickle")
+        save_tree_as_world_file(self, world_file_path)
+        with open(tree_file_path, "wb") as f:
+            pickle.dump(self,f)
+
 # -------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------------------------
 class TileGrid():
@@ -119,8 +132,8 @@ class TileGrid():
 
 #	 plot_tree function
 # ----------------------------------------------------------------------------------------------------------------------------------
-def plot_tree(tile_tree, bounding_boxes=True, areas=True, exits=True, connections=True):
-    plot_seq_of_tiles(list(tile_tree.tiles), bounding_boxes=bounding_boxes, areas=areas, exits=exits, connections=connections)
+def plot_tree(tile_tree, bounding_boxes=True, connections=True, tunnel_axis = True):
+    plot_seq_of_tiles(list(tile_tree.tiles), bounding_boxes=bounding_boxes, connections=connections, tunnel_axis = tunnel_axis)
 
 ####################################################################################################################################
 #	Functions for saving the tree as a .world file for gazebo

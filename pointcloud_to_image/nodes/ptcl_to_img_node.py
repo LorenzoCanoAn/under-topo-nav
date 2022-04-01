@@ -30,7 +30,7 @@ class ConversionNode:
         image = self.conversor(msg)
 
         # Create image message
-        image_msg = self._bridge.cv2_to_imgmsg(image, "mono8")
+        image_msg = self._bridge.cv2_to_imgmsg(image, "32FC1")
         image_msg.header.seq = self.seq
         self.seq += 1
         image_msg.header.stamp = rospy.Time.now()

@@ -2,7 +2,7 @@
 import argparse
 from syslog import LOG_DEBUG
 from training_utils.ImageDataset import ImageDataset
-from training_utils.training_utils import load_class
+from training_utils.training_utils import load_class, basic_train
 
 ##############################################################
 #	Configuration of the parser

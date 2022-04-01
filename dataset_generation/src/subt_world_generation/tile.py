@@ -48,6 +48,7 @@ for file in files_in_dir:
 class Tile:
     CD = tile_definitions
     _scale = 1
+
     def __init__(self, i_type):
         self.params = self.CD[i_type]
 
@@ -66,11 +67,12 @@ class Tile:
         # Initialise an empty list of connections
         self.connections = [None for _ in range(
             len(self.params["connection_points"]))]
-        
+
         # Initialise the tunnel axis
         self.axis = []
         for i in range(len(self.params["tunnel_axis"])):
             self.axis.append(TunnelAxis(self, i))
+
     @property
     def is_block(self):
         try:
@@ -84,23 +86,27 @@ class Tile:
 
     @property
     def uri(self):
-        return "model://" + self.params["model_name"]
+        if self._scale != 1.0:
+            return "model://" + str(self._scale)+self.params["model_name"]
+        else:
+            return "model://" + self.params["model_name"]
 
     @classmethod
     def scale(cls, new_scale):
-        cls._scale = new_scale / cls._scale
+        re_scaling_factor = new_scale/cls._scale
         for tile_type in cls.CD.keys():
             params = cls.CD[tile_type]
             k = "connection_points"
             for i in range(len(params[k])):
-                params[k][i][0] *= cls._scale
-                params[k][i][1] *= cls._scale
-                params[k][i][2] *= cls._scale
+                params[k][i][0] *= re_scaling_factor
+                params[k][i][1] *= re_scaling_factor
+                params[k][i][2] *= re_scaling_factor
             for k in ["bounding_boxes"]:
-                params[k] = recursive_scaling(cls._scale, params[k])
+                params[k] = recursive_scaling(re_scaling_factor, params[k])
             for k in ["tunnel_axis"]:
-                params[k] = recursive_scaling(cls._scale, params[k])
-           
+                params[k] = recursive_scaling(re_scaling_factor, params[k])
+
+        cls._scale = new_scale
 
     def connect_and_move(self, t2, nc2, nc):
         '''Connects this tile to the parent tile. The parent tile must be a Tile instance.
@@ -248,6 +254,18 @@ class ConnectionPoint(ChildGeometry):
         other connection point'''
         return np.math.sqrt(np.sum(np.square(self.xyz-other_connection.xyz)))
 
+    def distance_to_point(self, point):
+        difference = self.xyz.T-point
+        d = np.math.sqrt(np.sum(np.square(difference)))
+        return d
+
+    @property
+    def associated_axis(self):
+        n = self.params("conn_to_axis")
+        if n >= 0:
+            return self.parent.axis[n]
+        else:
+            None
 # --------------------------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------------------------------------------
 
@@ -312,7 +330,8 @@ class TunnelAxis(ChildGeometry):
         if self.recalculate:
             self._segment_points = np.zeros([self.n_segment_points, 3])
             for idx, point in enumerate(self.raw_segment_points):
-                self._segment_points[idx, :] = transform_point(point, self.P_T_M)
+                self._segment_points[idx, :] = transform_point(
+                    point, self.P_T_M)
             return self._segment_points
         else:
             return self._segment_points
@@ -321,17 +340,18 @@ class TunnelAxis(ChildGeometry):
         total_extra_points = 0
         self.segment_info = []
         for ns in range(self.n_segments):
-            d = np.math.sqrt(np.square(np.sum(self.raw_segment_points[ns]-self.raw_segment_points[ns+1])))
-            segment_extra_points = ceil(d/self.res) - 2 
+            d = np.math.sqrt(
+                np.square(np.sum(self.raw_segment_points[ns]-self.raw_segment_points[ns+1])))
+            segment_extra_points = ceil(d/self.res) - 2
             total_extra_points += segment_extra_points
             self.segment_info.append(segment_extra_points)
         total_n_points = total_extra_points + self.n_segment_points
-        self._points = np.zeros((total_n_points,3))
-    
+        self._points = np.zeros((total_n_points, 3))
+
     @property
     def n_points(self):
         return len(self._points)
-    
+
     @property
     def points(self):
         '''This funciton is to be called once, after the tile has reached its final 
@@ -340,28 +360,31 @@ class TunnelAxis(ChildGeometry):
         if self.recalculate:
             idx = 0
             for ns in range(self.n_segments):
-                self._points[idx,:] = self.segment_points[ns]
-                idx+=1
+                self._points[idx, :] = self.segment_points[ns]
+                idx += 1
                 nsp = self.segment_info[ns]
                 u = (self.segment_points[ns+1] - self.segment_points[ns])/nsp
-                intra_segment_points = np.multiply(np.reshape(np.arange(1,nsp+0.01,1),(-1,1)), np.reshape(u,(1,3))) + self.segment_points[ns]
-                self._points[idx:idx+nsp,:] = intra_segment_points
-                idx +=nsp
-            self._points[-1,:] = self.segment_points[-1]
+                intra_segment_points = np.multiply(np.reshape(np.arange(
+                    1, nsp+0.01, 1), (-1, 1)), np.reshape(u, (1, 3))) + self.segment_points[ns]
+                self._points[idx:idx+nsp, :] = intra_segment_points
+                idx += nsp
+            self._points[-1, :] = self.segment_points[-1]
             return self._points
         else:
             return self._points
-    
+
     @property
     def x(self):
-        return self.points[:,0]
+        return self.points[:, 0]
+
     @property
     def y(self):
-        return self.points[:,1]
+        return self.points[:, 1]
+
     @property
     def z(self):
-        return self.points[:,2]
-            
+        return self.points[:, 2]
+
 
 ############################################################################################################################
 ############################################################################################################################
@@ -502,7 +525,7 @@ class MinBorders:
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
-def plot_tile(tile, bounding_boxes=True, connections=True, tunnel_axis = True):
+def plot_tile(tile, bounding_boxes=True, connections=True, tunnel_axis=True):
     '''Takes a tile as input and sents de matplotlib commands to plot the different 
     components.'''
     assert isinstance(tile, Tile)
@@ -523,21 +546,20 @@ def plot_tile(tile, bounding_boxes=True, connections=True, tunnel_axis = True):
             assert isinstance(cnp, ConnectionPoint)
             plt.scatter(cnp.x, cnp.y, c="k")
 
-
     return min_borders
 
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
-def plot_seq_of_tiles(seq_of_tiles, bounding_boxes=True, areas=True, exits=True, connections=True):
+def plot_seq_of_tiles(seq_of_tiles, bounding_boxes=True, connections=True, tunnel_axis=True):
     plt.gca().clear()
     for idx, tile in enumerate(seq_of_tiles):
         if idx == 0:
             borders = plot_tile(
-                tile, bounding_boxes=bounding_boxes, connections=connections)
+                tile, bounding_boxes=bounding_boxes, connections=connections, tunnel_axis=tunnel_axis)
         else:
             borders.update_with_other_instance(plot_tile(
-                tile, bounding_boxes=bounding_boxes, connections=connections))
+                tile, bounding_boxes=bounding_boxes, connections=connections, tunnel_axis=tunnel_axis))
 
     min_x, min_y, max_x, max_y = borders.borders
 
@@ -548,4 +570,3 @@ def plot_seq_of_tiles(seq_of_tiles, bounding_boxes=True, areas=True, exits=True,
 
     plt.gca().set_xlim(min_x, min_x+final_size)
     plt.gca().set_ylim(min_y, min_y+final_size)
-    plt.draw()

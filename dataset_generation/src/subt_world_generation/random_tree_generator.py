@@ -2,6 +2,7 @@ from subt_world_generation.tile_tree import TileTree, plot_tree
 from subt_world_generation.tile import Tile, get_random_non_blocking_tile, get_random_tile, ALIAS
 import matplotlib.pyplot as plt
 import random
+from time import time_ns as ns
 
 # --------------------------------------------------------------------------------------------------------------------------------------
 #	 definition of the RandomTreeGenerator class
@@ -10,6 +11,7 @@ class RandomTreeGenerator(TileTree):
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def __init__(self, max_tiles = 200):
         super().__init__()
+        random.seed(ns())
         self.__free_connections = FreeConnectionsTracker(self)
         self.max_tiles = max_tiles
 
@@ -175,6 +177,7 @@ class RandomTreeGenerator(TileTree):
         the position of the connection'''
         p_conn_pose = p_tile.connection_points[conn]
         return p_conn_pose
+    
 
 # -------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------------------------
@@ -233,9 +236,8 @@ def random_tile_type():
 # -----------------------------------------------------------------------------------------------------------------------------------
 
 
-def plot_random_tree(tree, bounding_boxes=True, areas=False, exits=False, connections=False):
-    plot_tree(tree, bounding_boxes=bounding_boxes, areas=areas,
-              exits=exits, connections=connections)
+def plot_random_tree(tree, bounding_boxes=True, connections=False, tunnel_axis = False):
+    plot_tree(tree, bounding_boxes=bounding_boxes, connections=connections, tunnel_axis = tunnel_axis)
     assert isinstance(tree, RandomTreeGenerator)
     for t, c in tree.free_connections:
         p = t.connection_points[c]

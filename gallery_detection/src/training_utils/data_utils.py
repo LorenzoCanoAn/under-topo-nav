@@ -16,7 +16,6 @@ def gen_normal_distribution( n_elements):
     return array
 
 def reshape_tensor(tensor):
-
     aperture = 40
     normal_array = gen_normal_distribution(aperture)
     centers = (tensor == torch.max(tensor)).nonzero(as_tuple=True)

@@ -6,8 +6,8 @@ connection_points:
   - [0, -10, 0, 0, 0, 4.7123]
   - [10, 0, 0, 0, 0, 0]
 conn_to_axis:
-  - [0, 0]
-  - [1, 0]
+  - 0
+  - 0
 tunnel_axis:
   [
     [
