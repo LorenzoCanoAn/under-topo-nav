@@ -1,92 +1,79 @@
 #!/bin/python3
 import argparse
-from syslog import LOG_DEBUG
+import pickle
+import torch
+from laserscan_image_nn.nn_definitions2 import *
 from training_utils.ImageDataset import ImageDataset
+from torchsummary import summary
+import torch.utils.data as data_utils
 from training_utils.training_utils import load_class, basic_train
+import torch.nn as nn
+import os
+cuda = torch.device('cuda')
 
 ##############################################################
 #	Configuration of the parser
 ##############################################################
-parser = argparse.ArgumentParser(description='Tests a gallery detection Neural Network.')
-parser.add_argument("nn_type", type=str)
-parser.add_argument("nn_name", type=str)
-parser.add_argument("path_to_dataset", type=str)
-parser.add_argument("--fraction_to_test", type=int)
-args = parser.parse_args()
+NET = gallery_detector_v4_1
+dataset_name = "test_dataset_3"
+dataset_type = "2d_gallery_detection"
+model_save_folder = "/home/lorenzo/catkin_data/models/gallery_detection_nn"
+n_epochs = 16
+batch_size = 512
+LR = [0.01,0.001,0.0001,0.00001]#[0.002,0.001,0.0009,0.0007,0.0005,0.0003,0.0001]
+
 
 ##############################################################
-#	Import the nn
+#	Summary
 ##############################################################
-NET = load_class(f"{args.nn_type}.nn_definitions.{args.nn_name}")
 print("Training net of type : {}".format(NET.__name__))
+print(summary(NET().to(cuda), (1, 16, 720)))
+
+##############################################################
+# Other arguments
+##############################################################
+dataset_root_folder = "/home/lorenzo/catkin_data/datasets"
+path_to_dataset = os.path.join(
+    dataset_root_folder, dataset_type, dataset_name)
 
 ##############################################################
 #	Load Dataset
 ##############################################################
-dataset = ImageDataset(args.path_to_dataset)
-exit()
-import torch
-import torch.utils.data as data_utils
-from torchvision import transforms
-import numpy as np
-from torchsummary import summary
-from torch import nn
-import matplotlib.pyplot as plt
-from laserscan_image_nn import *
-import matplotlib.pyplot as plt
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
-torch.cuda.empty_cache()
-DATASET_FOLDER = "/home/lorenzo/Datasets/gallery_detection/laserscan_image_polished"
-PATH_TO_MODEL = "/home/lorenzo/catkin_ws/data/trained_nets/gallery_detection_nets/laserscan_image_based/gallery_detector_v3_loss_MSELoasdfss_lr_0.0005_N_16__"
-UPDATE_MODEL = False
-
-net = NET().to(device)
-summary(net,(1,16,360))
-
-DATASET_FOLDER = "/home/lorenzo/Datasets/gallery_detection/laserscan_image_polished"
-dataset = ImageDataset(path_to_dataset=DATASET_FOLDER,do_augment=False)
-i = 0
-
+dataset = ImageDataset(path_to_dataset,do_augment=False)
 
 train_len = int(dataset.__len__() * 0.9)
 test_len = int(dataset.__len__() - train_len)
 
-train_dataset, test_dataset = data_utils.random_split(dataset,[train_len, test_len])
+train_dataset, test_dataset = data_utils.random_split(
+    dataset, [train_len, test_len])
 
-net = NET()
 torch.cuda.empty_cache()
-LR = [0.0002, 0.0001, 0.00005, 0.00001]
-BATCH_SIZE = 512
-N_EPOCHS = 32
 
-train_dataloader = data_utils.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=5)    
-test_dataloader = data_utils.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=5)    
-
-
-criterion = nn.MSELoss()
-if UPDATE_MODEL:
-    net.load_state_dict(torch.load(PATH_TO_MODEL))
-net = net.to(device).float()
-for lr in LR:
-    torch.cuda.empty_cache()
-
-    print(
-        "type: {}, loss: {}, lr: {}".format(
-            NET.__name__, criterion.__class__.__name__, lr
-        )
-    ) 
+train_dataloader = data_utils.DataLoader(
+    train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=5)
+test_dataloader = data_utils.DataLoader(
+    test_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=5)
     
+model = NET()
+
+for lr in LR:
+    model = model.to(cuda).float()
+    model_file = f"{model.__class__.__name__}_lr{lr}_bs{batch_size}_ne{n_epochs}"
+    model_save_file = os.path.join(model_save_folder, model_file+".pickle")
+    if not os.path.isdir(model_save_folder):
+        os.mkdir(model_save_folder)
+
+    criterion = nn.MSELoss()
+
     torch.cuda.empty_cache()
+
     optimizer = torch.optim.Adam(
-        net.parameters(),
+        model.parameters(),
         lr=lr,
     )
     loss_hist = basic_train(
-        net, train_dataloader,test_dataloader, criterion, optimizer, N_EPOCHS
+        model, train_dataloader, criterion, optimizer, n_epochs, cuda,lr
     )
-    NN_PATH = "/home/lorenzo/catkin_ws/data/trained_nets/gallery_detection_nets/laserscan_image_based/{}_losss_{}_lr_{}_N_{}_small".format(
-        NET.__name__, criterion.__class__.__name__, lr, N_EPOCHS
-    )
-    print(NN_PATH)
-    torch.save(net.state_dict(), NN_PATH)
+    print(f"\n Saving model in: {model_save_file}")
+    with open(model_save_file, "wb+") as f:
+        pickle.dump(model, f)

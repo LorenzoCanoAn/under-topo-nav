@@ -774,4 +774,3 @@ class lets_get_chonky_2(nn.Module):
         # X should be an image with floats from 0 to 1
         logits = self.layers(x)
         return logits
-NET = lets_get_chonky_2

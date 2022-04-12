@@ -1,29 +1,40 @@
 import imp, os
+from matplotlib import pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
 
-
-def basic_train(network, train_loader, criterion, optimizer, n_epochs, device):
-    loss = 1
+def basic_train(network, train_loader, criterion, optimizer, n_epochs, device, lr):
+    writer = SummaryWriter(log_dir="/home/lorenzo/tensor_board")
     for epoch in range(n_epochs):  # loop over the dataset multiple times
         loss_history = []
         print("", end="\r")
-        print("Epoch {} out of {}: loss {}".format(
-            epoch + 1, n_epochs, loss), end="")
+        print("Epoch {} out of {}".format(
+            epoch + 1, n_epochs), end="")
         for i, data in enumerate(train_loader):
             # get the inputs; data is a list of [inputs, labels]
-            print("", end="\r")
-            print(f"{i}", end="")
             inputs, labels = data
             inputs = inputs.to(device)
             labels = labels.to(device)
 
             # zero the parameter gradients
-            optimizer.zero_grad()
 
             # forward + backward + optimize
             outputs = network(inputs)
             loss = criterion(outputs, labels)
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            j = i + epoch * train_loader.__len__()
+            writer.add_scalar(f"Loss/train/lr_{lr}",loss,j)
+    fig = plt.figure(1)
+    plt.subplot(211)
+    plt.imshow(inputs[0][0].detach().cpu().numpy())
+    plt.subplot(212)
+    plt.gca().clear()
+    plt.plot(outputs[0].detach().cpu().numpy())
+    plt.plot(labels[0].detach().cpu().numpy())
+    plt.gca().set_xlim(0,360)
+    fig.canvas.draw()
+    writer.add_figure(f"result/lr{lr}",fig,epoch)
 
     return loss_history
 
