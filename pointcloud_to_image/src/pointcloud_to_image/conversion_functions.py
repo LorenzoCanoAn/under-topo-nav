@@ -39,8 +39,10 @@ class ptcl_to_height_depth_image:
 
 
 class ptcl_to_angle_depth_image:
-    def __init__(self, n_rays = 16):
+    def __init__(self, n_rays = 16, cutoff_distance = 15, normalize = True):
         self.n_rays = n_rays
+        self.cutoff_distance = cutoff_distance
+        self.normalize = normalize
 
     def __call__(self, msg: PointCloud2):
         point_array = np.array(list(pc2.read_points(
@@ -61,6 +63,11 @@ class ptcl_to_angle_depth_image:
         image = np.zeros((self.n_rays, 360*2)).astype("float32")
 
         image[delta_angles_deg, theta_angles_double] = distances
+
+        if self.cutoff_distance > 0:
+            image = np.where(image>self.cutoff_distance,self.cutoff_distance,image)
+        if self.normalize:
+            image /= np.max(image)
 
         return image
 

@@ -20,7 +20,7 @@ class ImageDataset(data_utils.Dataset):
         self.horizontal_flip = transforms.RandomHorizontalFlip(p=1)
 
         self.device = torch.device(
-            "cuda:0" if torch.cuda.is_available() else "cpu")
+            "cuda:0")
         self.load_dataset(path_to_dataset)
 
     def load_dataset(self, dataset_folder):
@@ -45,7 +45,6 @@ class ImageDataset(data_utils.Dataset):
             x = torch.reshape(x, self.new_image_shape)
             self.images[idx, ...] = x
             self.labels[idx, ...] = y
-            
         print()
 
 

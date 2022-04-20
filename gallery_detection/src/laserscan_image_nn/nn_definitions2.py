@@ -107,38 +107,31 @@ class gallery_detector_v4_1(nn.Module):
             nn.Conv2d(1,8,[3,3],padding=(0,1),padding_mode="circular"),
             nn.BatchNorm2d(8),
             nn.MaxPool2d([1,2]),
-            nn.Dropout(0.2),
             nn.ReLU(),
 
             nn.Conv2d(8,16,[3,3],padding=(0,1),padding_mode="circular"),
             nn.BatchNorm2d(16),
-            nn.Dropout(0.2),
             nn.ReLU(),
 
             nn.Conv2d(16,32,[3,3],padding=(0,1),padding_mode="circular"),
             nn.BatchNorm2d(32),
-            nn.Dropout(0.2),
             nn.ReLU(),
 
             nn.Conv2d(32,64,[3,3],padding=(0,1),padding_mode="circular"),
             nn.BatchNorm2d(64),
-            nn.Dropout(0.2),
             nn.ReLU(),
 
             nn.Conv2d(64,32,[3,3],padding=(0,1),padding_mode="circular"),
             nn.BatchNorm2d(32),
-            nn.Dropout(0.2),
             nn.ReLU(),
 
             nn.Conv2d(32,16,[3,3],padding=(0,1),padding_mode="circular"),
             nn.BatchNorm2d(16),
-            nn.Dropout(0.2),
             nn.ReLU(),
             
             nn.Conv2d(16,8,[3,3],padding=(0,1),padding_mode="circular"),
             nn.BatchNorm2d(8),
             nn.MaxPool2d([2,2]),
-            nn.Dropout(0.2),
             nn.ReLU(),
             nn.Flatten(),
 
@@ -147,9 +140,7 @@ class gallery_detector_v4_1(nn.Module):
             nn.Dropout(0.2),
 
             nn.Linear(720,360),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            
+            nn.ReLU(),           
             
         )
     @classmethod

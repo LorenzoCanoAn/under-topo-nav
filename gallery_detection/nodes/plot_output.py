@@ -1,3 +1,5 @@
+#!/bin/python3
+
 from std_msgs.msg import Float32MultiArray
 import rospy
 import matplotlib.pyplot as plt

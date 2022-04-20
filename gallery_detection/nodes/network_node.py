@@ -27,7 +27,7 @@ class NetworkNode:
 
     def init_network(self):
         try:
-            nn_file = rospy.get_param("saved_nn_path",default="/home/lorenzo/catkin_data/models/gallery_detection_nn/gallery_detector_v4_lr0.0001_bs512_ne16.pickle")
+            nn_file = rospy.get_param("saved_nn_path",default="/home/lorenzo/catkin_data/models/gallery_detection_nn/gallery_detector_v4_1_lr0.0002_bs1024_ne32.pickle")
         except KeyError:
             rospy.logerr("'saved_nn_path' parameter must be set")
             exit()

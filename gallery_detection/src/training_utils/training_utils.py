@@ -1,5 +1,6 @@
 import imp, os
 from matplotlib import pyplot as plt
+import torch
 from torch.utils.tensorboard import SummaryWriter
 
 def basic_train(network, train_loader, criterion, optimizer, n_epochs, device, lr):
@@ -11,9 +12,11 @@ def basic_train(network, train_loader, criterion, optimizer, n_epochs, device, l
             epoch + 1, n_epochs), end="")
         for i, data in enumerate(train_loader):
             # get the inputs; data is a list of [inputs, labels]
+            torch.cuda.empty_cache()
             inputs, labels = data
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+            inputs = inputs.to(torch.device("cuda"))
+            labels = labels.to(torch.device("cuda"))
+
 
             # zero the parameter gradients
 
