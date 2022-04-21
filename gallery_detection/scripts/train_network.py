@@ -15,11 +15,11 @@ cuda = torch.device('cuda')
 ##############################################################
 #	Configuration of the parser
 ##############################################################
-NET = gallery_detector_v4_1
-dataset_name = "test_dataset_3"
+NET = gallery_detector_v4_1_small
+dataset_name = "transformed_old_dataset"
 dataset_type = "2d_gallery_detection"
 model_save_folder = "/home/lorenzo/catkin_data/models/gallery_detection_nn"
-n_epochs = 32
+n_epochs = 16
 batch_size = 1024
 base_lr = 0.001
 LR = []#[0.002,0.001,0.0009,0.0007,0.0005,0.0003,0.0001]
@@ -37,7 +37,7 @@ for f in files:
 #	Summary
 ##############################################################
 print("Training net of type : {}".format(NET.__name__))
-print(summary(NET().to(cuda), (1, 16, 720)))
+print(summary(NET().to(cuda), (1, 16, 360)))
 
 ##############################################################
 # Other arguments
