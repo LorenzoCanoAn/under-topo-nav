@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python3
 from pointcloud_to_image import get_conversor_by_str
 import rospy
 from cv_bridge import CvBridge

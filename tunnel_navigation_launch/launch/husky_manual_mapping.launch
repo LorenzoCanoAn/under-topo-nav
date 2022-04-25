@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node name="pcl_to_img" pkg="pointcloud_to_image" type="ptcl_to_img_node.py" output="screen">
+      <remap from="pointcloud_topic" to="/velodyne_points"/>
+      <remap from="image_topic" to="/lidar_image"/>
+    </node>
+</launch>
