@@ -1,10 +1,6 @@
 <?xml version="1.0"?>
 <launch>
 
-  <machine name="husky" address="cpr-a200-0678" env-loader="/opt/ros/melodic/env.sh" user="administrator"/>
-  
-  <node name="pcl_to_img" pkg="pointcloud_to_image" type="ptcl_to_img_node.py" output="screen" machine="husky">
-    <remap from="pointcloud_topic" to="/velodyne_points"/>
-    <remap from="image_topic" to="/lidar_image"/>
-  </node>
+  <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel" user="administrator"/>
+
 </launch>
