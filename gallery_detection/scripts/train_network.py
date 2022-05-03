@@ -71,7 +71,7 @@ model = model.to(cuda).float()
 for lr in LR:
     
     model_file = f"{model.__class__.__name__}_lr{lr}_bs{batch_size}_ne{n_epochs}"
-    model_save_file = os.path.join(model_save_folder, model_file+".pickle")
+    model_save_file = os.path.join(model_save_folder, model_file+"_state_dict")
     if not os.path.isdir(model_save_folder):
         os.mkdir(model_save_folder)
 
@@ -87,5 +87,4 @@ for lr in LR:
         model, train_dataloader, criterion, optimizer, n_epochs, cuda,lr
     )
     print(f"\n Saving model in: {model_save_file}")
-    with open(model_save_file, "wb+") as f:
-        pickle.dump(model, f)
+    torch.save(model.state_dict(), model_save_file)

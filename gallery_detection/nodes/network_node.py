@@ -1,11 +1,11 @@
 #!/bin/python3
 import torch
 from cv_bridge import CvBridge
+from laserscan_image_nn.nn_definitions2 import gallery_detector_v4, gallery_detector_v4_1_small,gallery_detector_v3
 import sensor_msgs.msg as sensor_msg
 import std_msgs.msg as std_msg
 import rospy
-import pickle
-
+import cv2
 
 # --------------------------------------------------------------
 #       SIMPLE CLASS TO HANDLE ROS COMMUNICATIONS
@@ -26,21 +26,19 @@ class NetworkNode:
             "/gallery_detection_vector", std_msg.Float32MultiArray, queue_size=10)
 
     def init_network(self):
-        try:
-            nn_file = rospy.get_param("saved_nn_path",default="/home/lorenzo/catkin_data/models/gallery_detection_nn/gallery_detector_v4_1_small_lr0.0002_bs1024_ne16.pickle")
-        except KeyError:
-            rospy.logerr("'saved_nn_path' parameter must be set")
-            exit()
+        file = rospy.get_param("saved_nn_path",default="/home/lorenzo/catkin_data/models/gallery_detection_nn_well_saved/gallery_detector_v3_loss_MSELoss_lr_0.0001_N_8_refined_state_dict")
+        self.model = gallery_detector_v3()
+        self.model.load_state_dict(torch.load(file))
+        self.model.eval()
 
-        with open(nn_file,"rb") as f:
-            self.model = pickle.load(f).to(torch.device("cpu")).eval()
+
 
     def image_callback(self, msg):
         depth_image = self._cv_bridge.imgmsg_to_cv2(msg, "32FC1")
-
+        depth_image = cv2.resize(depth_image, dsize=(16, 360), interpolation=cv2.INTER_CUBIC)
         depth_image_tensor = torch.tensor(depth_image).float().to(torch.device("cpu"))
         depth_image_tensor /= torch.max(depth_image_tensor)
-        depth_image_tensor = torch.reshape(depth_image_tensor, [1, 1, -1, 720])
+        depth_image_tensor = torch.reshape(depth_image_tensor, [1, 1, -1, 720])*255
 
         data = self.model(depth_image_tensor)
         data = data.cpu().detach().numpy()

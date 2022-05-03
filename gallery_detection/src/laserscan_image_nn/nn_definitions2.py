@@ -1,11 +1,53 @@
 from torch import dropout, nn
 from torchsummary import summary
 import torch
-
 class gallery_detector_v3(nn.Module):
     """Detecta entre recta e intersección a 4"""
     def __init__(self):
         super(gallery_detector_v3, self).__init__()
+        self.layers = nn.Sequential(
+            nn.Conv2d(1,8,[3,3],padding=(1,1),padding_mode="circular"),
+            nn.Dropout(p=0.05),
+            nn.MaxPool2d([2,2]),
+            nn.ReLU(),
+            nn.Conv2d(8,16,[3,3],padding=(1,1),padding_mode="circular"),
+            nn.Dropout(p=0.05),
+            nn.Conv2d(16,16,[3,3],padding=(1,1),padding_mode="zeros"),
+            nn.Dropout(p=0.05),
+            nn.MaxPool2d([2,2]),
+            nn.ReLU(),
+            nn.Conv2d(16,32,[3,3],padding=(1,1),padding_mode="circular"),
+            nn.Dropout(p=0.05),
+            nn.ReLU(),
+            nn.Conv2d(32,32,[3,3],padding=(1,1),padding_mode="circular"),
+            nn.Dropout(p=0.05),
+            nn.MaxPool2d([2,2]),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(2880,2880),
+            nn.Dropout(p=0.05),
+            nn.ReLU(),
+            nn.Linear(2880,1440),
+            nn.Dropout(p=0.05),
+            nn.ReLU(),
+            nn.Linear(1440,720),
+            nn.Dropout(p=0.05),
+            nn.ReLU(),
+            nn.Linear(720, 360)
+        )
+    @classmethod
+    def is_2d(cls):
+        return False
+
+    def forward(self, x):
+        # X should be an image with floats from 0 to 1
+        logits = self.layers(x)
+        return logits
+
+class gallery_detector_v3_v1(nn.Module):
+    """Detecta entre recta e intersección a 4"""
+    def __init__(self):
+        super(gallery_detector_v3_v1, self).__init__()
         self.layers = nn.Sequential(
             nn.Conv2d(1,8,[3,3],padding=(1,1),padding_mode="circular"),
             nn.Dropout(p=0.05),
