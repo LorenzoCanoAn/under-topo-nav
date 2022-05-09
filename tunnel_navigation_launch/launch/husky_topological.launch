@@ -1,11 +1,18 @@
 <?xml version="1.0"?>
 <launch>
+  <arg name="nn_type" default="gallery_detector_v3"/>
+  <arg name="nn_path" default="/home/lorenzo/catkin_data/models/gallery_detection/gallery_detector_v3_loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
 
   <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator"/>
+
   <node name="pcl_to_img" pkg="pointcloud_to_image" type="ptcl_to_img_node.py" output="screen" machine="husky">
     <remap from="pointcloud_topic" to="/velodyne_points"/>
     <remap from="image_topic" to="/lidar_image"/>
   </node>
-  <node name="nn_node" pkg="gallery_detection" type="network_node.py" output="screen" machine="husky"/>
-  
+
+  <include file="$(find gallery_detection)/launch/gallery_detection.launch">
+    <arg name="nn_type" value="$(arg nn_type)"/>
+    <arg name="nn_path" value="$(arg nn_path)"/>
+  </include> 
+
 </launch>
