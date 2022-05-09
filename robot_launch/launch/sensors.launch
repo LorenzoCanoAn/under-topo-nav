@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <launch>
+  <arg name="img_type" default="angles"/>
+  <arg name="image_width" default="360"/>
+  <arg name="image_height" default="16"/>
   <arg name="nn_type" default="gallery_detector_v3"/>
   <arg name="nn_path" default="/home/lorenzo/catkin_data/models/gallery_detection/gallery_detector_v3_loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
 
