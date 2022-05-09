@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Neural Network Parameters-->
+    <arg name="nn_type" />
+    <arg name="nn_path" />
+
+    <node name="gallery_detection_node" pkg="gallery_detection" type="network_node.py" output="screen">
+        <param name="nn_type" type="str" value="$(arg nn_type)"/>
+        <param name="nn_path" type="str" value="$(arg nn_path)"/>
+    </node>
+
+</launch>
