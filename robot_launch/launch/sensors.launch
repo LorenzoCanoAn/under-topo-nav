@@ -6,7 +6,7 @@
   <arg name="nn_type" default="gallery_detector_v3"/>
   <arg name="nn_path" default="/home/administrator/catkin_data/models/gallery_detection_nn/gallery_detector_v3_loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
 
-  <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator"/>
+  <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator" default="true"/>
 
   <node name="pcl_to_img" pkg="pointcloud_to_image" type="ptcl_to_img_node.py" output="screen" machine="husky">
       <remap from="pointcloud_topic" to="/velodyne_points"/>
