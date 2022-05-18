@@ -31,7 +31,7 @@ class NetworkNode:
         module = importlib.import_module("laserscan_image_nn.nn_definitions2")
 
         self.model = getattr(module, nn_type)()
-        self.model.load_state_dict(torch.load(file))
+        self.model.load_state_dict(torch.load(file),map_location=torch.device("cpu"))
         self.model.eval()
 
 
