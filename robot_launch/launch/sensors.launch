@@ -4,7 +4,7 @@
   <arg name="image_width" default="360"/>
   <arg name="image_height" default="16"/>
   <arg name="nn_type" default="gallery_detector_v3"/>
-  <arg name="nn_path" default="/home/lorenzo/catkin_data/models/gallery_detection/gallery_detector_v3_loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
+  <arg name="nn_path" default="/home/administrator/catkin_data/models/gallery_detection_nn/gallery_detector_v3_loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
 
   <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator"/>
 
