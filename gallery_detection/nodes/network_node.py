@@ -1,5 +1,4 @@
 #!/bin/python3
-from regex import W
 import torch
 from cv_bridge import CvBridge
 import sensor_msgs.msg as sensor_msg
