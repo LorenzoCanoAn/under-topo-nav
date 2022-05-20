@@ -95,7 +95,7 @@ def gallery_vector_callback(msg: ros_std_msg.Float32MultiArray):
             min_dist = min(min_dist, laser_data.ranges[j])
             min_dist = min(min_dist, laser_data.ranges[-j])
 
-        if N_PLOT.data % 3 == 0:
+        if False:  # N_PLOT.data % 3 == 0:
             plt.cla()
             plt.scatter(laser_data.angles, angle_value_vector)
             plt.scatter(laser_data.angles, laser_data.ranges)
