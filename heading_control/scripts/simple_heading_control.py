@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 
 import time
-from typing import final
 import rospy
-from rospy.names import valid_name
 from rospy.topics import Publisher
 import std_msgs.msg as ros_std_msg
 import geometry_msgs.msg as ros_gmt_msg
