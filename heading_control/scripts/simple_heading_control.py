@@ -82,7 +82,7 @@ def gallery_vector_callback(msg: ros_std_msg.Float32MultiArray):
         for n, i in enumerate(laser_data.angles):
             angle_value_vector[n] = np.math.pi - min_distance(i, objective_angle)
         angle_value_vector /= np.max(angle_value_vector)
-        angle_value_vector = angle_value_vector[:-2]
+        angle_value_vector = angle_value_vector[:-1]
         total_value_vector = np.multiply(angle_value_vector, laser_data.filtered)
         max_idx = np.argmax(total_value_vector)
         final_angle = laser_data.angles[max_idx]
