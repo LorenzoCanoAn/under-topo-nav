@@ -36,7 +36,8 @@ def filtered_to_gallery_angles(filtered):
             true_gallery_angles.append(a1)
     return true_gallery_angles
 
-def filter_vector(vector):
+def filter_vector(msg):
+    vector = msg.data
     filtered = np.zeros(360)
     for i in range(360):
         to_check = vector[i]
