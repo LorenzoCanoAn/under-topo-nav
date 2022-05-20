@@ -52,6 +52,7 @@ def filter_vector(vector):
 def main():
     rospy.init_node("gallery_vector_filtering")
     subscriber = rospy.Subscriber("/gallery_detection_vector", std_msg.Float32MultiArray)
+    rospy.spin()
 
 if __name__ == "__main__":
     main()
