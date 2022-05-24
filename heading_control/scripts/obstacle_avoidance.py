@@ -1,3 +1,4 @@
+#!/bin/python3
 import rospy
 import numpy as np
 import sensor_msgs.msg as sensor_msgs
