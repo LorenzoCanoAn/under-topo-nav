@@ -159,6 +159,7 @@ class HeadingControlNode:
 
 
 def main():
+    rospy.sleep(5)
     heading_control_node = HeadingControlNode()
     rospy.spin()
 
