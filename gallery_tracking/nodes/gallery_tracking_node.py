@@ -4,7 +4,6 @@ import std_msgs.msg as std_msg
 import nav_msgs.msg as nav_msg
 import math
 import numpy as np
-from time import time_ns as ns
 
 
 def euler_from_quaternion(x, y, z, w):
@@ -125,7 +124,6 @@ class TrackingNode:
         rospy.init_node("gallery_tracking_node")
         self.tracker = GalleryTracker()
         self.prev_z = 0
-        self.prev_time = ns()
         self.gallery_subscriber = rospy.Subscriber(
             "/currently_detected_galleries",
             std_msg.Float32MultiArray,
@@ -153,8 +151,6 @@ class TrackingNode:
         self.tracked_galleries_publisher.publish(output_message)
 
     def odometry_callback(self, msg):
-        time = ns()
-        self.prev_time = time
 
         q = msg.pose.pose.orientation
         x, y, z = euler_from_quaternion(q.x, q.y, q.z, q.w)
