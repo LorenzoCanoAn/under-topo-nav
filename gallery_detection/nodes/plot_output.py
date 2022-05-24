@@ -54,7 +54,7 @@ class Plotter:
         if not self.back_gallery is None:
             plt.scatter(self.back_gallery, 0.5, c="k")
         if not self.final_angle is None:
-            plt.scatter(self.back_gallery, 0.5, c="g")
+            plt.scatter(self.final_angle, 0.5, c="g")
         plt.gca().set_theta_zero_location("N")
         plt.gca().set_rlim([0, 1])
         plt.draw()

@@ -24,6 +24,7 @@ def angle_to_speed(angle):
 def angle_callback(msg, publisher):
     publisher = publisher[0]
     angle = msg.data
+    print(angle)
     v, w = angle_to_speed(angle)
     out_msg = geometry_msgs.Twist()
     out_msg.angular.z = w
