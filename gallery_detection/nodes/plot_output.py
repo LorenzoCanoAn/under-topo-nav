@@ -26,12 +26,18 @@ class Plotter:
         rospy.Subscriber(
             "/followed_gallery",
             Float32,
-            callback=self.gallery_to_follow_callback,
+            callback=self.followed_gallery_callback,
         )
+
         rospy.Subscriber(
             "/back_gallery",
             Float32,
             callback=self.back_gallery_callback,
+        )
+        rospy.Subscriber(
+            "/corrected_angle",
+            Float32,
+            callback=self.final_gallery_callback,
         )
 
     def callback(self, msg):
@@ -46,6 +52,8 @@ class Plotter:
             plt.scatter(self.followed_gallery, 0.5, c="r")
         if not self.back_gallery is None:
             plt.scatter(self.back_gallery, 0.5, c="k")
+        if not self.final_angle is None:
+            plt.scatter(self.back_gallery, 0.5, c="g")
         plt.gca().set_theta_zero_location("N")
         plt.gca().set_rlim([0, 1])
         plt.draw()
@@ -55,13 +63,17 @@ class Plotter:
         self.x = np.array(msg.data)
         self.y = np.ones(len(self.x))
 
-    def gallery_to_follow_callback(self, msg):
+    def followed_gallery_callback(self, msg):
         assert isinstance(msg, Float32)
         self.followed_gallery = msg.data
 
     def back_gallery_callback(self, msg):
         assert isinstance(msg, Float32)
         self.back_gallery = msg.data
+
+    def final_gallery_callback(self, msg):
+        assert isinstance(msg, Float32)
+        self.final_angle = msg.data
 
 
 def main():

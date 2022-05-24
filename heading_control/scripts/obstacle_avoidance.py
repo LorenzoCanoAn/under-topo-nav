@@ -18,6 +18,7 @@ class ObstacleAvoidanceNode:
         rospy.Subscriber(
             "/followed_gallery", std_msgs.Float32, callback=self.angle_callback
         )
+        self.block = False
         rospy.Subscriber("/scan", sensor_msgs.LaserScan, callback=self.scanner_callback)
         self.laser_data = LaserData()
 
@@ -28,7 +29,6 @@ class ObstacleAvoidanceNode:
     def angle_callback(self, msg):
         if self.laser_data.angle_increment is None:
             return
-
         objective_angle = msg.data
         angle_value_vector = np.zeros(self.laser_data.angles.__len__())
         for n, i in enumerate(self.laser_data.angles):
@@ -38,6 +38,7 @@ class ObstacleAvoidanceNode:
         total_value_vector = np.multiply(angle_value_vector, self.laser_data.filtered)
         max_idx = np.argmax(total_value_vector)
         final_angle = self.laser_data.angles[max_idx]
+        print(final_angle)
         self.angle_publisher.publish(final_angle)
 
     def scanner_callback(self, msg):
@@ -55,6 +56,7 @@ class ObstacleAvoidanceNode:
 
 
 def main():
+    rospy.init_node("obstacle_avoidance")
     obstacle_avoidance_node = ObstacleAvoidanceNode()
     rospy.spin()
 
