@@ -7,7 +7,7 @@
   <arg name="nn_path" default="/home/administrator/catkin_data/models/gallery_detection_nn/gallery_detector_v3_loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
 
   <!--Neural network nodes-->
-  <include file="$(find robot_launch)/launch/neural_network.launch">
+  <include file="$(find robot_launch)/launch/gallery_detection_and_tracking.launch">
     <arg name="img_type" value="$(arg img_type)"/>
     <arg name="image_width" value="$(arg image_width)"/>
     <arg name="image_height" value="$(arg image_height)"/>

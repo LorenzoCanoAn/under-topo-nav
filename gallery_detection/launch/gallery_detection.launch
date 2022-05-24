@@ -10,5 +10,5 @@
         <param name="nn_path" value="$(arg nn_path)"/>
     </node>
 
-    <node name="neural_network_filtering" pkg="gallery_detection" type="output_filtering_node.py" output="log" />
+    <node name="neural_network_filtering" pkg="gallery_detection" type="output_filtering_node_v2.py" output="log" />
 </launch>
