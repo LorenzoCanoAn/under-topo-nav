@@ -11,5 +11,4 @@
     </node>
 
     <node name="neural_network_filtering" pkg="gallery_detection" type="output_filtering_node.py" output="log" />
-
 </launch>

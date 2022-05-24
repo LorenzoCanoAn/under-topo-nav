@@ -28,5 +28,7 @@
     <arg name="nn_path" value="$(arg nn_path)"/>
   </include> 
 
+  <include file="$(find gallery_tracking)/launch/gallery_tracking.launch"
+
   
 </launch>
