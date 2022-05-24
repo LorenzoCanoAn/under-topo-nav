@@ -13,6 +13,7 @@ class Plotter:
         self.y = np.zeros(0)
         self.followed_gallery = None
         self.back_gallery = None
+        self.final_angle = None
         rospy.Subscriber(
             "/tracked_galleries",
             Float32MultiArray,
