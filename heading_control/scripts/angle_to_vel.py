@@ -35,7 +35,7 @@ def main():
     rospy.init_node("angle_to_twist")
     publisher = rospy.Publisher("/cmd_vel", geometry_msgs.Twist, queue_size=10)
     subscriber = rospy.Subscriber(
-        "/followed_gallery",
+        "/corrected_angle",
         std_msgs.Float32,
         callback=angle_callback,
         callback_args=[publisher],

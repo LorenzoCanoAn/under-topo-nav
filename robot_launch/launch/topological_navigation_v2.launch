@@ -20,7 +20,8 @@
   <!-- NODES THAT RUN ON THE ROBOT-->
   <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator" default="true"/>
 
-  <node name="heading_control_node_v2" pkg="heading_control" type="heading_control_v2_node.py" output="screen" />
+  <node name="gallery_selector" pkg="heading_control" type="gallery_selector.py" output="screen" />
+  <node name="obstacle_avoidance" pkg="heading_control" type="obstacle_avoidance.py" output="screen"/>
   <node name="angle_to_twist" pkg="heading_control" type="angle_to_vel.py" output="screen" />
 
 </launch>

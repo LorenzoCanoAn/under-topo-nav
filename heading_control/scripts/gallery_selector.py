@@ -127,7 +127,6 @@ class HeadingControlNode:
             return False
         galleries = np.array(self.galleries)
         if self.back_gallery is None:
-
             distances = min_dis(galleries, math.pi)
             new_back = galleries[np.argmin(distances)]
             self.back_gallery = new_back
