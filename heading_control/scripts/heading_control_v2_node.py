@@ -66,7 +66,6 @@ class HeadingControlNode:
 
             if self.state == "waiting_for_instructions":
                 self.followed_gallery = None
-                self.back_gallery = None
                 self.instructions = rospy.get_param(
                     "/topological_instructions", default=None
                 )
@@ -80,6 +79,7 @@ class HeadingControlNode:
 
             elif self.state == "instructions_recieved":
                 self.changed_gallery_number = False
+                self.back_gallery = None
                 self.choose_gallery_to_follow()
                 self.transition_counter = 0
 
@@ -104,7 +104,7 @@ class HeadingControlNode:
             if not self.followed_gallery is None:
                 self.followed_galery_publisher.publish(self.followed_gallery)
 
-            if not self.followed_gallery is None:
+            if not self.back_gallery_publisher is None:
                 self.back_gallery_publisher.publish(self.back_gallery)
 
     def choose_gallery_to_follow(self):
@@ -127,8 +127,10 @@ class HeadingControlNode:
             return False
         galleries = np.array(self.galleries)
         if self.back_gallery is None:
+
             distances = min_dis(galleries, math.pi)
-            self.back_gallery = galleries[np.argmin((distances))]
+            new_back = galleries[np.argmin(distances)]
+            self.back_gallery = new_back
         else:
             distances = min_dis(galleries, self.back_gallery)
             min_dist_idx = np.argmin(distances)
