@@ -16,6 +16,7 @@ class TileTree:
     def __init__(self):
         self._scale = 1.0
         self.tile_grid = TileGrid()
+        self._non_blocking_tiles = set()
         self.tiles = []
 
     def __getitem__(self,i):
@@ -42,6 +43,8 @@ class TileTree:
     def add_tile(self, t1):
         self.tiles.append(t1)
         self.tile_grid.add_tile(t1)
+        if not t1.params["model_name"] in BLOCK_TILES:
+            self._non_blocking_tiles.add(t1)
 
     def connect_two_tiles(self, t1, nc1, t2, nc2):
         '''Assigns the correct connectios to each 
@@ -55,6 +58,8 @@ class TileTree:
         t1.reset_connections()
         self.tiles.remove(t1)
         self.tile_grid.remove_tile(t1)
+        if not t1.params["model_name"] in BLOCK_TILES:
+            self._non_blocking_tiles.remove(t1)
 
     def check_collisions(self, tile):
         for other_tile in self.tile_grid.get_neighbors(tile):
@@ -66,10 +71,6 @@ class TileTree:
 
     @property
     def non_blocking_tiles(self):
-        self._non_blocking_tiles = set()
-        for t in self:
-            if not t.params["model_name"] in BLOCK_TILES:
-                self._non_blocking_tiles.add(t)
         return self._non_blocking_tiles
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

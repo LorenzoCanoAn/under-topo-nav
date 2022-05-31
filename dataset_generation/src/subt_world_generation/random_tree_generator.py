@@ -114,19 +114,22 @@ class RandomTreeGenerator(TileTree):
             possible_tile_types.append(ALIAS["tunnel_t"])
         if len(t2nc2_list) > 2:
             possible_tile_types.append(ALIAS["tunnel_4_way_intersection"])
-
+        
+        # Iterate over the possible tiles
         for t_type in possible_tile_types:
             t3 = Tile(t_type)
             if t3.params["symetric"]:
                 iterator = range(1)
             else:
                 iterator = range(t3.n_connections)
+            # Iterate over the possible connections
             for nc3 in iterator:
                 current_cand_possible_connections = []
                 t3.move_to_connection(t1, nc1, nc3)
                 if self.check_collisions(t3):
                     continue
-
+                
+                # Check the other connections of t3
                 for nc3_, p3_ in enumerate(t3.connection_points):
                     if nc3_ == nc3:
                         continue

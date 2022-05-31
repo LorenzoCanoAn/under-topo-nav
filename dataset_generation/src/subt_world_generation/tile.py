@@ -8,7 +8,7 @@ from shapely import affinity
 from scipy.spatial.transform import Rotation
 import os.path
 import os
-
+from functools import lru_cache
 
 ALIAS = {
     "tunnel_block": "tunnel_tile_blocker",
@@ -19,7 +19,6 @@ ALIAS = {
     "tunnel_wall": "hatch"
 }
 BLOCK_TILES = {"tunnel_tile_blocker", "hatch"}
-
 ############################################################################################################################
 #	Loading of the yaml file with the info about the tiles
 ############################################################################################################################
@@ -207,16 +206,10 @@ class ChildGeometry:
 
 class ConnectionPoint(ChildGeometry):
     key = "connection_points"
-
-    @property
-    def C_T_M(self):
-        '''Returns the Transformation matrix
-         from the tile center to the exit'''
-        try:
-            return self._C_T_M
-        except:
-            self._C_T_M = xyzrot_to_TM(self.params(self.key))
-            return self._C_T_M
+    def __init__(self, parent, idx):
+        super().__init__(parent, idx)
+        # Transformation from the center of the tile to the connection
+        self.C_T_M = xyzrot_to_TM(tuple(self.params(self.key)))
 
     @property
     def T_M(self):
@@ -231,7 +224,7 @@ class ConnectionPoint(ChildGeometry):
     def op_dir_mat(self):
         '''Returns the global transformation matrix that 
         an exit connecting to this one must have'''
-        return self.T_M * xyzrot_to_TM([0, 0, 0, 0, 0, np.math.pi])
+        return self.T_M * INV_MAT
 
     @property
     def x(self):
@@ -275,7 +268,7 @@ class BoundingBox(ChildGeometry):
 
     def __init__(self, parent, idx):
         super().__init__(parent, idx)
-
+        self.redo_polygon = True
     @property
     def raw_perimeter_points(self):
         '''Returns the perimeter points before moving the tile as a 
@@ -291,6 +284,7 @@ class BoundingBox(ChildGeometry):
         '''Returns the perimeter points after moving the tile as a
         Nx3 array, N being the number of points in the perimeter'''
         if self.recalculate:
+            self.redo_polygon = True
             self._points = np.zeros([self.n_perimeter_points, 3])
             for idx, point in enumerate(self.raw_perimeter_points):
                 self._points[idx, :] = transform_point(point, self.P_T_M)
@@ -299,8 +293,10 @@ class BoundingBox(ChildGeometry):
             return self._points
 
     def as_polygon(self) -> Polygon:
-        return Polygon(self.perimeter_points)
-
+        if self.redo_polygon:
+            self._as_polygon = Polygon(self.perimeter_points)
+            self.redo_polygon = False
+        return self._as_polygon 
 # -----------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------------------------------------
 
@@ -399,6 +395,7 @@ class TunnelAxis(ChildGeometry):
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
+@lru_cache(maxsize=100)
 def xyzrot_to_TM(xyzrot):
     '''Transforms a [x,y,z,roll,pitch,yaw] vector to a transformation matrix'''
     assert len(xyzrot) == 6
@@ -406,6 +403,7 @@ def xyzrot_to_TM(xyzrot):
     p = np.matrix(xyzrot[:3]).T
     return np.vstack([np.hstack([r, p]), np.matrix([0, 0, 0, 1])])
 
+INV_MAT = xyzrot_to_TM((0, 0, 0, 0, 0, np.math.pi))
 # --------------------------------------------------------------------------------------------------------------------------------------
 
 
