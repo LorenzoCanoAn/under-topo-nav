@@ -116,7 +116,7 @@ class GalleryTracker:
 
         self.block_odom = False
         self.block_gallery = False
-        return self.galleries[self.confidences > self.max_confidence * 0.8]
+        return np.append(self.galleries, self.confidences)
 
 
 class TrackingNode:

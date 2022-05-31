@@ -4,6 +4,8 @@ import torch
 class gallery_detector_v3(nn.Module):
     """Detecta entre recta e intersección a 4"""
     def __init__(self):
+        self.input_height = 16
+        self.input_width = 360
         super(gallery_detector_v3, self).__init__()
         self.layers = nn.Sequential(
             nn.Conv2d(1,8,[3,3],padding=(1,1),padding_mode="circular"),
@@ -98,6 +100,8 @@ class gallery_detector_v3_v1(nn.Module):
 class gallery_detector_v4(nn.Module):
     """Detecta entre recta e intersección a 4"""
     def __init__(self):
+        self.input_width = 720
+        self.input_height = 16
         super(gallery_detector_v4, self).__init__()
         self.layers = nn.Sequential(
             nn.Conv2d(1,8,[3,3],padding=(0,1),padding_mode="circular"),

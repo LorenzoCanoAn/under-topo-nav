@@ -1,15 +1,9 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="img_type" default="angles"/>
-    <arg name="image_width" default="360"/>
-    <arg name="image_height" default="16"/>
 
     <node name="pcl_to_img" pkg="pointcloud_to_image" type="ptcl_to_img_node.py" output="screen">
       <remap from="pointcloud_topic" to="/velodyne_points"/>
       <remap from="image_topic" to="/lidar_image"/>
-      <param name="image_type" type="str" value="$(arg img_type)" />
-      <param name="image_width" type="int" value="$(arg image_width)"/>
-      <param name="image_height" type="int" value="$(arg image_height)"/>
     </node>
 
 </launch>

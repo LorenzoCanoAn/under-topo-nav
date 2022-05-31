@@ -1,4 +1,5 @@
 #!/bin/python3
+import pathlib
 import torch
 from cv_bridge import CvBridge
 import sensor_msgs.msg as sensor_msg
@@ -26,23 +27,25 @@ class NetworkNode:
             "/gallery_detection_vector", std_msg.Float32MultiArray, queue_size=10)
 
     def init_network(self):
-        file = rospy.get_param("~nn_path")
-        nn_type = rospy.get_param("~nn_type")
+        file_path = rospy.get_param("~nn_path")
+        file_name = pathlib.Path(file_path).name
+        nn_type = file_name.split("-")[0]
+
         module = importlib.import_module("laserscan_image_nn.nn_definitions2")
 
         self.model = getattr(module, nn_type)()
-        self.model.load_state_dict(torch.load(file,map_location=torch.device("cpu")))
+        rospy.set_param("/ptcl_to_img/image_width",self.model.input_width)
+        rospy.set_param("/ptcl_to_img/image_height",self.model.input_height)
+        self.model.load_state_dict(torch.load(file_path,map_location=torch.device("cpu")))
         self.model.eval()
 
 
 
     def image_callback(self, msg):
         depth_image = self._cv_bridge.imgmsg_to_cv2(msg, "32FC1")
-        
         depth_image_tensor = torch.tensor(depth_image).float().to(torch.device("cpu"))
         depth_image_tensor /= torch.max(depth_image_tensor)
         depth_image_tensor = torch.reshape(depth_image_tensor, [1, 1, 16, -1])
-
         data = self.model(depth_image_tensor)
         data = data.cpu().detach().numpy()
         data = data[0, :]

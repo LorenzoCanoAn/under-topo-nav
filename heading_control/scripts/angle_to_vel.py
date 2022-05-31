@@ -4,8 +4,8 @@ import geometry_msgs.msg as geometry_msgs
 import std_msgs.msg as std_msgs
 import math
 
-MAX_ANG_VEL = 0.2
-MAX_VEL = 0.4
+MAX_ANG_VEL = 0.4
+MAX_VEL = 1
 MIN_DIST = 1
 
 
@@ -15,7 +15,7 @@ def angle_to_speed(angle):
     w = angle
     if abs(w) > MAX_ANG_VEL:
         w = w / abs(w) * MAX_ANG_VEL
-    v = (MAX_VEL * (min(MIN_DIST, 2) / 2)) - abs(w) / MAX_ANG_VEL * MAX_VEL
+    v = (MAX_VEL * (min(2, 2) / 2)) - abs(w) / MAX_ANG_VEL * MAX_VEL
     v = max((v, 0))
     print((v, w))
     return v, w

@@ -10,7 +10,8 @@ import time
 
 def min_dis(angles, angle):
     distances = (angles - angle + 2 * math.pi) % (2 * math.pi)
-    distances[distances > math.pi] = 2 * math.pi - distances[distances > math.pi]
+    distances[distances > math.pi] = 2 * \
+        math.pi - distances[distances > math.pi]
     return distances
 
 
@@ -42,7 +43,9 @@ class HeadingControlNode:
         self.thread.join()
 
     def tracked_galleries_callback(self, msg):
-        new_galleries = list(msg.data)
+        angles, confidences = np.split(np.array(msg.data), 2)
+        new_galleries = list(angles[confidences > 20*0.8])
+
         new_galleries.sort()
         if self.galleries is None:
             self.galleries = new_galleries
@@ -75,7 +78,8 @@ class HeadingControlNode:
                             self.change_state("instructions_recieved")
                             self.curr_inst = 0
                     except:
-                        print("The topological instructions parameter must be a list!")
+                        print(
+                            "The topological instructions parameter must be a list!")
 
             elif self.state == "instructions_recieved":
                 self.changed_gallery_number = False

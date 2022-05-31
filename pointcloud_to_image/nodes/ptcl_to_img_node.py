@@ -26,17 +26,18 @@ class ConversionNode:
         self.conversor = get_conversor_by_str(
             rospy.get_param("image_type", default="angle")
         )()
-        self.image_width = rospy.get_param("image_width", default=360)
-        self.image_height = rospy.get_param("image_height", default=16)
         for key in self.conversor.__dict__.keys():
             setattr(
                 self.conversor,
                 key,
-                rospy.get_param("key", default=self.conversor.__dict__[key]),
+                rospy.get_param(key, default=self.conversor.__dict__[key]),
             )
 
     def callback(self, msg):
         # Create image
+        c_nmp = f"{rospy.get_namespace()}/{rospy.get_name()}"
+        self.image_width = rospy.get_param(f"ptcl_to_img/image_width", default=360)
+        self.image_height = rospy.get_param(f"ptcl_to_img/image_height", default=16)
         image = self.conversor(msg)
         image = cv2.resize(
             image,

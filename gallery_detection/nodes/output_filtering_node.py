@@ -24,20 +24,12 @@ def array_position_to_angle(array_position):
 
 def filtered_to_gallery_angles(filtered):
     max_peak = np.max(filtered)
-    ratio = 0.3
+    ratio = 0.1
     galleries_indices = np.nonzero(filtered > max_peak * ratio)[0]
     galleries_angles = []
     for index in galleries_indices:
         galleries_angles.append(array_position_to_angle(index))
-    true_gallery_angles = []
-    for a1 in galleries_angles:
-        passes = True
-        for a2 in true_gallery_angles:
-            if min_distance(a1, a2) < 0.17:  # 10 degrees
-                passes = False
-        if passes:
-            true_gallery_angles.append(a1)
-    return true_gallery_angles
+    return galleries_angles, filtered[galleries_indices]
 
 
 class FilteringNode:
@@ -64,10 +56,13 @@ class FilteringNode:
                 index_inside_subsection = ((-int(a / 2) + j) + i) % 356
                 if vector[index_inside_subsection] > to_check:
                     filtered[i] = 0
-        gallery_angles = filtered_to_gallery_angles(filtered)
-        dim = (std_msg.MultiArrayDimension("0", gallery_angles.__len__(), 1),)
+        gallery_angles, values = filtered_to_gallery_angles(filtered)
+        dim = (std_msg.MultiArrayDimension("0", gallery_angles.__len__(), 2),)
         layout = std_msg.MultiArrayLayout(dim, 0)
-        output_message = std_msg.Float32MultiArray(layout, gallery_angles)
+        output_message = std_msg.Float32MultiArray(
+            layout, np.hstack([gallery_angles, values])
+        )
+
         self.detection_publisher.publish(output_message)
 
 
