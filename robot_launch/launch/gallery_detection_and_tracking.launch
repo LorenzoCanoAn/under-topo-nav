@@ -3,7 +3,6 @@
   <arg name="img_type" default="angles"/>
   <arg name="image_width" default="360"/>
   <arg name="image_height" default="16"/>
-  <arg name="nn_type" default="gallery_detector_v3"/>
   <arg name="nn_path" default="/home/administrator/catkin_data/models/gallery_detection_nn/gallery_detector_v3_loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
 
   <!-- NODES THAT RUN ON THE VISUALIZATION PC-->
@@ -13,18 +12,9 @@
 
 
   <!-- NODES THAT RUN ON THE ROBOT-->
-  <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator" default="true"/>
-
-  <node name="pcl_to_img" pkg="pointcloud_to_image" type="ptcl_to_img_node.py" output="screen" machine="husky">
-      <remap from="pointcloud_topic" to="/velodyne_points"/>
-      <remap from="image_topic" to="/lidar_image"/>
-      <param name="image_type" type="str" value="$(arg img_type)" />
-      <param name="image_width" type="int" value="$(arg image_width)"/>
-      <param name="image_height" type="int" value="$(arg image_height)"/>
-  </node>
+  <!-- <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator" default="true"/> -->
 
   <include file="$(find gallery_detection)/launch/gallery_detection.launch">
-    <arg name="nn_type" value="$(arg nn_type)"/>
     <arg name="nn_path" value="$(arg nn_path)"/>
   </include> 
 

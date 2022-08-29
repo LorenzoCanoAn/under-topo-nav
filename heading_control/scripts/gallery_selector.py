@@ -9,7 +9,7 @@ import time
 
 
 def min_dis(angles, angle):
-    distances = (angles - angle + 2 * math.pi) % (2 * math.pi)
+    distances = np.abs((angles - angle))
     distances[distances > math.pi] = 2 * \
         math.pi - distances[distances > math.pi]
     return distances
@@ -55,7 +55,6 @@ class HeadingControlNode:
             self.galleries = new_galleries
         if len(self.galleries) != len(self.prev_galleries):
             self.changed_gallery_number = True
-            print("CHANGED GALLERY NUMBER")
         self.update_back_gallery()
         self.update_followed_gallery()
 
@@ -92,7 +91,7 @@ class HeadingControlNode:
                     self.transition_counter = 0
                     self.changed_gallery_number = False
                 self.transition_counter += 1
-                if self.transition_counter == 5:
+                if self.transition_counter == 20:
                     self.curr_inst += 1
                     if self.curr_inst >= len(self.instructions):
                         self.change_state("finished")
@@ -137,7 +136,7 @@ class HeadingControlNode:
         else:
             distances = min_dis(galleries, self.back_gallery)
             min_dist_idx = np.argmin(distances)
-            if distances[min_dist_idx] > (15 / 180 * math.pi):
+            if distances[min_dist_idx] > (20 / 180 * math.pi):
                 self.back_gallery = None
                 self.update_back_gallery()
             else:

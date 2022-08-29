@@ -1,5 +1,0 @@
-    <include>
-      <name>{}</name>
-      <pose>{}</pose>
-      <uri>{}</uri>
-    </include>

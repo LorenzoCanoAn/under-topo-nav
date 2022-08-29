@@ -3,23 +3,21 @@
   <arg name="img_type" default="angles"/>
   <arg name="image_width" default="360"/>
   <arg name="image_height" default="16"/>
-  <arg name="nn_type" default="gallery_detector_v3"/>
-  <arg name="nn_path" default="/home/administrator/catkin_data/models/gallery_detection_nn/gallery_detector_v3_loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
+  <arg name="nn_path" default="$(env HOME)/catkin_data/models/gallery_detection_nn/gallery_detector_v3-loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
 
   <!--Neural network nodes-->
   <include file="$(find robot_launch)/launch/gallery_detection_and_tracking.launch">
     <arg name="img_type" value="$(arg img_type)"/>
     <arg name="image_width" value="$(arg image_width)"/>
     <arg name="image_height" value="$(arg image_height)"/>
-    <arg name="nn_type" value="$(arg nn_type)"/>
     <arg name="nn_path" value="$(arg nn_path)"/>
   </include>
 
   <!-- NAVIGATION NODES-->
   <!-- NODES THAT RUN ON THE VISUALIZATION PC-->
   <!-- NODES THAT RUN ON THE ROBOT-->
-  <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator" default="true"/>
-
+<!--   <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator" default="true"/>
+ -->
   <node name="gallery_selector" pkg="heading_control" type="gallery_selector.py" output="screen" />
   <node name="obstacle_avoidance" pkg="heading_control" type="obstacle_avoidance.py" output="screen"/>
   <node name="angle_to_twist" pkg="heading_control" type="angle_to_vel.py" output="screen" />

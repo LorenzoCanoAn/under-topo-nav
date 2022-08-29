@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="world_file_path" default="/home/lorenzo/catkin_data/worlds/r_1648714192440489274_s1.0/gazebo.world" />
+  <!-- <arg name="world_file_path" default="/home/lorenzo/catkin_data/worlds/empty/gazebo.world" /> -->
+  <arg name="world_file_path" default="/home/lorenzo/Documents/tfm/trees/105_2/gazebo.world" />
   <arg name="gui" default="true" />
   <!-- Launch Gazebo -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">

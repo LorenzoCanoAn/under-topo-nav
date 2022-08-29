@@ -7,10 +7,10 @@ import gazebo_msgs.msg
 import gazebo_msgs.srv
 import sensor_msgs.msg
 import geometry_msgs.msg
+from subt_dataset_generation.training_points_2d import random_label_in_tile
 import rospy
 import numpy as np
 from cv_bridge import CvBridge
-from subt_dataset_generation.training_points_2d import random_points_in_tile_tree
 from subt_world_generation.tile_tree import TileTree
 
 
@@ -45,7 +45,7 @@ class RobotMover:
             "/gazebo/set_model_state", gazebo_msgs.srv.SetModelState)
 
     def send_position(self, p, o):
-        position = geometry_msgs.msg.Point(p[0], p[1], p[2])
+        position = geometry_msgs.msg.Point(p[0], p[1], 0.15)
         qx, qy, qz, qw = get_quaternion_from_euler(0, 0, o)
         orientation = geometry_msgs.msg.Quaternion(qx, qy, qz, qw)
         pose = geometry_msgs.msg.Pose(position, orientation)
@@ -58,7 +58,7 @@ class RobotMover:
 class ImageStorage:
     def __init__(self):
         self._sub = rospy.Subscriber(
-            "image_topic", sensor_msgs.msg.Image, callback=self.callback)
+            "/lidar_image", sensor_msgs.msg.Image, callback=self.callback)
         self._switch = True
         self._brdg = CvBridge()
 
@@ -83,11 +83,10 @@ def main():
 
     world_name = rospy.get_param("world_name")
     samples_per_tile = int(rospy.get_param("n_samples_per_tile"))
-
     tree_path = os.path.join("/home/lorenzo/catkin_data/worlds",
                         world_name, "tree.pickle")
     base_dataset_path = "/home/lorenzo/catkin_data/datasets/2d_gallery_detection"
-    dataset_name = "test_dataset"
+    dataset_name = world_name
     dataset_path = os.path.join(base_dataset_path, dataset_name)
     if os.path.isdir(dataset_path):
         pass
@@ -98,14 +97,19 @@ def main():
     assert isinstance(tree, TileTree)
     mover = RobotMover()
     storage = ImageStorage()
-    points, orientations, labels = random_points_in_tile_tree(tree, ppt=samples_per_tile)
-
-    for i, (p, o, l) in enumerate(zip(points.T, orientations.T, labels.T)):
-        mover.send_position(p, o)
-        storage.block()
-        storage.block()
-        save_path = os.path.join(dataset_path,str(i)+".pickle")
-        save_sample(storage.image, l, save_path)
+    i = 0
+    with open(os.path.join(dataset_path,"info.txt"),"w") as info_file:
+        for tile in tree.non_blocking_tiles:
+            for n in range(samples_per_tile):
+                p,o,l = random_label_in_tile(tile,2)
+                info_file.write(f"{p}-{o}\n")
+                mover.send_position(p, o)
+                storage.block()
+                storage.block()
+                save_path = os.path.join(dataset_path,str(i)+".pickle")
+                save_sample(storage.image, l, save_path)
+                i+=1
+                print(i)
         
 
 

@@ -2,7 +2,7 @@
 <launch>
 
     <!-- Neural Network Parameters-->
-    <arg name="nn_path" default="$(env HOME)/catkin_data/models/gallery_detection_nn/gallery_detector_v4_1-lr0.001_bs1024_ne16_state_dict"/>
+    <arg name="nn_path" default="$(env HOME)/catkin_data/models/gallery_detection_nn/gallery_detector_v3-loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
 
     <include file="$(find pointcloud_to_image)/launch/ptcl_to_img.launch">
     </include>

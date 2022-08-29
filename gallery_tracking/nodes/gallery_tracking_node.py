@@ -47,11 +47,14 @@ class GalleryTracker:
             return
         self.block_gallery = True
         self.block_odom = True
-        base_confidences = values / max(values)
-        angles = np.delete(angles, np.where(base_confidences < 0.2))
-        base_confidences = np.delete(base_confidences, np.where(base_confidences < 0.2))
-        distance_matrix = np.zeros((len(self.galleries), len(angles)))
 
+        # Remove detected galleries with small confidences
+        normalized_confidences = values / max(values)
+        angles = np.delete(angles, np.where(normalized_confidences < 0.2))
+        normalized_confidences = np.delete(normalized_confidences, np.where(normalized_confidences < 0.2))
+
+        # Calculate the distance matrix between the detected galleries and the tracked galleries
+        distance_matrix = np.zeros((len(self.galleries), len(angles)))
         for i, gallery in enumerate(self.galleries):
             distances = (gallery - angles + 2 * math.pi) % (2 * math.pi)
             distances[distances > math.pi] = (
@@ -68,10 +71,10 @@ class GalleryTracker:
             gallery_re_observed = False
 
             if i == np.argmin(distance_matrix[:, j]):
-                if min_distance < 10 / 180 * math.pi:
+                if min_distance < 20 / 180 * math.pi:
                     self.galleries[i] = angles[j]
                     self.confidences[i] = min(
-                        base_confidences[j] + self.confidences[i], self.max_confidence
+                        normalized_confidences[j] + self.confidences[i], self.max_confidence
                     )
                     unasigned_angles.remove(angles[j])
                     gallery_re_observed = True
@@ -89,7 +92,7 @@ class GalleryTracker:
         for a in unasigned_angles:
             self.galleries = np.append(self.galleries, a)
             self.confidences = np.append(
-                self.confidences, base_confidences[list(angles).index(a)]
+                self.confidences, normalized_confidences[list(angles).index(a)]
             )
 
         # Delete galleries too close to each other
@@ -102,7 +105,7 @@ class GalleryTracker:
                     2 * math.pi - distances[distances > math.pi]
                 )
                 close_to_gallery = np.array(
-                    np.where(distances < 20 / 180 * 2 * math.pi)
+                    np.where(distances < 20 / 180 * math.pi)
                 ).flatten()
                 if len(close_to_gallery) > 1:
                     dominant_gallery = np.argmax(self.confidences[close_to_gallery])
@@ -145,9 +148,8 @@ class TrackingNode:
         if galleries is None:
             return
         data = galleries
-        dim = (std_msg.MultiArrayDimension("0", data.__len__(), 2),)
-        layout = std_msg.MultiArrayLayout(dim, 0)
-        output_message = std_msg.Float32MultiArray(layout, data)
+        output_message = std_msg.Float32MultiArray()
+        output_message.data=data
         self.tracked_galleries_publisher.publish(output_message)
 
     def odometry_callback(self, msg):

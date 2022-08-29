@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="world_name" default="r_1648714192440489274_s1.0"/>
-    <arg name="n_samples_per_tile" default="5000"/>
+    <arg name="world_name" default="r_1654610759595649467_s1.0"/>
+    <arg name="n_samples_per_tile" default="5"/>
     <arg name="worlds_folder" value="/home/lorenzo/catkin_data/worlds"/>
     <arg name="world_file_path" value="$(arg worlds_folder)/$(arg world_name)/gazebo.world"/>
 

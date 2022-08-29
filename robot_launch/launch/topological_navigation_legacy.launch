@@ -18,8 +18,8 @@
   <!-- NAVIGATION NODES-->
   <!-- NODES THAT RUN ON THE VISUALIZATION PC-->
   <!-- NODES THAT RUN ON THE ROBOT-->
-  <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator" default="true"/>
-
+<!--   <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator" default="true"/>
+ -->
   <node name="heading_control" pkg="heading_control" type="simple_heading_control.py" output="screen" />
 
 </launch>

@@ -26,22 +26,52 @@ class ObstacleAvoidanceNode:
             "/corrected_angle", std_msgs.Float32, queue_size=10
         )
 
+        # PLOTTING TOPICS
+        self._final_angle_value_publisher = rospy.Publisher(
+            "/oa_final_weight", std_msgs.Float32MultiArray, queue_size=10
+        )
+        self._desired_angle_weight_publisher = rospy.Publisher(
+            "/oa_desired_angle_weight", std_msgs.Float32MultiArray, queue_size=10
+        )
+        self._scanner_weight_publisher = rospy.Publisher(
+            "/oa_laser_scan_weight", std_msgs.Float32MultiArray, queue_size=10
+        )
+        self._angles_publisher = rospy.Publisher(
+            "/oa_angles", std_msgs.Float32MultiArray, queue_size=10
+        )
+        self._final_angle_value_message = std_msgs.Float32MultiArray()
+        self._desired_angle_weight_message = std_msgs.Float32MultiArray()
+        self._scanner_weight_message = std_msgs.Float32MultiArray()
+        self._angles_message = std_msgs.Float32MultiArray()
+
+
     def angle_callback(self, msg):
         if self.laser_data.angles is None:
             return
 
         objective_angle = msg.data
-        angle_value_vector = np.zeros(self.laser_data.angles.__len__())
+        desired_angle_weight = np.zeros(self.laser_data.angles.__len__())
         for n, i in enumerate(self.laser_data.angles):
-            angle_value_vector[n] = np.math.pi - \
+            desired_angle_weight[n] = np.math.pi - \
                 min_distance(i, objective_angle)
-        angle_value_vector /= np.max(angle_value_vector)
-        angle_value_vector = angle_value_vector
-        total_value_vector = np.multiply(
-            angle_value_vector, self.laser_data.filtered)
-        max_idx = np.argmax(total_value_vector)
+        desired_angle_weight /= np.max(desired_angle_weight)
+        desired_angle_weight = desired_angle_weight
+        final_angle_value_vector = np.multiply(
+            desired_angle_weight, self.laser_data.filtered)
+        max_idx = np.argmax(final_angle_value_vector)
         final_angle = self.laser_data.angles[max_idx]
         self.angle_publisher.publish(final_angle)
+
+
+        self._final_angle_value_message.data = final_angle_value_vector
+        self._desired_angle_weight_message.data = desired_angle_weight
+        self._scanner_weight_message.data = self.laser_data.filtered
+        self._angles_message.data = self.laser_data.angles
+
+        self._final_angle_value_publisher.publish(self._final_angle_value_message)
+        self._desired_angle_weight_publisher.publish(self._desired_angle_weight_message)
+        self._scanner_weight_publisher.publish(self._scanner_weight_message)
+        self._angles_publisher.publish(self._angles_message)
 
     def scanner_callback(self, msg):
         scan_ranges = np.array(msg.ranges).flatten()

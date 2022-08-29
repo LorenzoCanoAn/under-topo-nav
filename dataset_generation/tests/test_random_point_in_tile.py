@@ -3,7 +3,7 @@ from subt_dataset_generation.training_points_2d import random_points_in_tile_tre
 from subt_world_generation.tile_tree import TileTree, plot_tree
 from subt_world_generation.tile import ALIAS, Tile
 from time import time_ns as ns
-from subt_dataset_generation.training_points_2d import random_points_in_tile
+from subt_dataset_generation.training_points_2d import random_label_in_tile
 import threading
 
 def main():

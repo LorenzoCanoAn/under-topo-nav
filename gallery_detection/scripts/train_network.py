@@ -10,13 +10,16 @@ from training_utils.training_utils import load_class, basic_train
 import torch.nn as nn
 import os
 import glob
+from datetime import datetime
+now = datetime.now()
+
 cuda = torch.device('cuda')
 
 ##############################################################
 #	Configuration of the parser
 ##############################################################
 NET = gallery_detector_v4_1_small
-dataset_name = "transformed_old_dataset"
+dataset_name = "r_1654610759595649467_s1.0"
 dataset_type = "2d_gallery_detection"
 model_save_folder = "/home/lorenzo/catkin_data/models/gallery_detection_nn"
 n_epochs = 16
@@ -69,9 +72,9 @@ test_dataloader = data_utils.DataLoader(
 model = NET()
 model = model.to(cuda).float()
 for lr in LR:
-    
-    model_file = f"{model.__class__.__name__}_lr{lr}_bs{batch_size}_ne{n_epochs}"
-    model_save_file = os.path.join(model_save_folder, model_file+"_state_dict")
+    time_string = now.strftime("_%m-%d-%Y-%H-%M-%S")
+    model_file = f"{model.__class__.__name__}-lr{lr}_bs{batch_size}_ne{n_epochs}"
+    model_save_file = os.path.join(model_save_folder, model_file+time_string+"_state_dict")
     if not os.path.isdir(model_save_folder):
         os.mkdir(model_save_folder)
 
