@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="topological_instructions" default="" />
+    <arg name="gui" default="true" />
+
+    <rosparam param="/topological_instructions" subst_value="True">$(arg topological_instructions)</rosparam>
+
+    <include file="$(find tunnel_navigation_launch)/launch/nn.launch"></include>
+
+    <node name="heading_control" pkg="heading_control" type="simple_heading_control.py"
+        output="screen" />
+
+</launch>
