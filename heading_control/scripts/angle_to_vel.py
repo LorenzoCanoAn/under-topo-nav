@@ -15,7 +15,7 @@ def angle_to_speed(angle):
     w = angle
     if abs(w) > MAX_ANG_VEL:
         w = w / abs(w) * MAX_ANG_VEL
-    v = (MAX_VEL * (min(2, 2) / 2)) - abs(w) / MAX_ANG_VEL * MAX_VEL
+    v = (MAX_VEL * (min(2, 2) / 2)) - abs(w) / MAX_ANG_VEL * MAX_VEL * 0.2
     v = max((v, 0))
     print((v, w))
     return v, w
