@@ -47,7 +47,7 @@ class ptcl_to_height_depth_image:
 
 
 class ptcl_to_angle_depth_image:
-    def __init__(self, n_rays=16, cutoff_distance=15, normalize=True):
+    def __init__(self, n_rays=16, cutoff_distance=100, normalize=True):
         self.n_rays = n_rays
         self.cutoff_distance = cutoff_distance
         self.normalize = normalize
