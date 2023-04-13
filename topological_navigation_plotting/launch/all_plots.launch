@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="tracking_plotter" pkg="topological_navigation_plotting" type="nn_and_tracking_plots.py" output="log" />
+    <node name="obstacle_avoidance_plotter" pkg="topological_navigation_plotting" type="obstacle_avoidance_plot.py" output="log" />
+</launch>
