@@ -1,0 +1,7 @@
+setup.py
+src/dataset_generation.egg-info/PKG-INFO
+src/dataset_generation.egg-info/SOURCES.txt
+src/dataset_generation.egg-info/dependency_links.txt
+src/dataset_generation.egg-info/top_level.txt
+src/subt_dataset_generation/__init__.py
+src/subt_dataset_generation/training_points_2d.py
