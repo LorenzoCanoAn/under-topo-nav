@@ -1,25 +1,28 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="img_type" default="angles"/>
-  <arg name="image_width" default="360"/>
-  <arg name="image_height" default="16"/>
-  <arg name="nn_path" default="/home/administrator/catkin_data/models/gallery_detection_nn/gallery_detector_v3_loss_MSELoss_lr_0.0001_N_8_refined_state_dict"/>
+  <arg name="img_type" default="angles" />
+  <arg name="image_width" default="360" />
+  <arg name="image_height" default="16" />
+  <arg name="nn_path"
+    default="$(env HOME)/catkin_data/models/gallery_detection_nn/gallery_detector_v3-loss_MSELoss_lr_0.0001_N_8_refined_state_dict" />
 
   <!-- NODES THAT RUN ON THE VISUALIZATION PC-->
 
   <!-- <node name="nn_output_plot" pkg="gallery_detection" type="plot_output.py"/> -->
-  <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find tunnel_navigation_launch)/rviz/default.rviz" /> -->
+  <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find
+  tunnel_navigation_launch)/rviz/default.rviz" /> -->
 
 
   <!-- NODES THAT RUN ON THE ROBOT-->
-  <!-- <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh" user="administrator" default="true"/> -->
+  <!-- <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh"
+  user="administrator" default="true"/> -->
 
   <include file="$(find gallery_detection)/launch/gallery_detection.launch">
-    <arg name="nn_path" value="$(arg nn_path)"/>
-  </include> 
+    <arg name="nn_path" value="$(arg nn_path)" />
+  </include>
 
-  
-  <include file="$(find gallery_tracking)/launch/gallery_tracking.launch"></include> 
 
-  
+  <include file="$(find gallery_tracking)/launch/gallery_tracking.launch"></include>
+
+
 </launch>
