@@ -45,7 +45,7 @@ class ConversionNode:
             interpolation=cv2.INTER_NEAREST,
         )
         # Create image message
-        image_msg = self._bridge.cv2_to_imgmsg(image, "32FC1")
+        image_msg = self._bridge.cv2_to_imgmsg(image, "passthrough")
         image_msg.header.seq = self.seq
         self.seq += 1
         image_msg.header.stamp = rospy.Time.now()
