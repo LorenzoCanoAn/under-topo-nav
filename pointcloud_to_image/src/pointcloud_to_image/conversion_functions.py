@@ -60,8 +60,9 @@ class ptcl_to_angle_depth_image:
             * 1
         )
         theta_angles = np.arctan2(point_array[:, 1], point_array[:, 0])
-        theta_angles_deg = theta_angles * 180 / np.pi
-        theta_angles_shifted = 359 - ((theta_angles_deg + 360 + 180) % 360)
+        theta_angles_deg = np.rad2deg(theta_angles)
+        # theta_angles_shifted = 359 - ((theta_angles_deg + 360 + 180) % 360)
+        theta_angles_shifted = (theta_angles_deg + 360) % 360
         theta_angles_double = (theta_angles_shifted * 2).astype(int)
 
         distance_to_z_axis = np.linalg.norm(point_array[:, 0:2], axis=1)
@@ -80,9 +81,6 @@ class ptcl_to_angle_depth_image:
 
         if self.cutoff_distance > 0:
             image = np.where(image > self.cutoff_distance, self.cutoff_distance, image)
-        if self.normalize:
-            image /= np.max(image)
-
         return image
 
 
