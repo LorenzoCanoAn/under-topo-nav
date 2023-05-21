@@ -44,10 +44,10 @@ class Plotter:
 
     def gallery_detection_vector_callback(self, msg):
         raw_vector = np.array(msg.data)
-        inverted = np.flip(raw_vector)
-        gallery_detection_vector = np.roll(inverted, 180)
-        angles = np.linspace(0, 2 * PI, len(gallery_detection_vector))
-        self._gallery_detection_vector = gallery_detection_vector
+        # inverted = np.flip(raw_vector)
+        # gallery_detection_vector = np.roll(inverted, 180)
+        angles = np.linspace(0, 2 * PI, len(raw_vector))
+        self._gallery_detection_vector = raw_vector
         self._angles = angles
         self._updated_nn_output = True
 
