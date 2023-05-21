@@ -4,6 +4,7 @@ import rospy
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, PointCloud2
 import cv2
+import numpy as np
 
 # --------------------------------------------------------------
 #       SIMPLE CLASS TO HANDLE ROS COMMUNICATIONS
@@ -15,6 +16,8 @@ class ConversionNode:
         rospy.init_node("ptcl_to_img_node")
         self.seq = 0
         self.setup_conversor()
+        self.normalize = rospy.get_param("~normalize", default=True)
+        self._norm_publisher = rospy.Publisher("/lidar_image_norm", Image, queue_size=5)
         self._publisher = rospy.Publisher("/lidar_image", Image, queue_size=5)
         self._bridge = CvBridge()
         self._subscriber = rospy.Subscriber(
@@ -39,19 +42,24 @@ class ConversionNode:
         self.image_width = rospy.get_param(f"ptcl_to_img/image_width", default=360)
         self.image_height = rospy.get_param(f"ptcl_to_img/image_height", default=16)
         image = self.conversor(msg)
+        self.seq += 1
+        stamp = rospy.Time.now()
         image = cv2.resize(
             image,
             dsize=(self.image_width, self.image_height),
             interpolation=cv2.INTER_NEAREST,
         )
-        # Create image message
-        image_msg = self._bridge.cv2_to_imgmsg(image, "32FC1")
-        image_msg.header.seq = self.seq
-        self.seq += 1
-        image_msg.header.stamp = rospy.Time.now()
-
-        # Send image message
-        self._publisher.publish(image_msg)
+        img_msg = self._bridge.cv2_to_imgmsg(image, "32FC1")
+        img_msg.header.stamp = stamp
+        img_msg.header.seq = self.seq
+        self._publisher.publish(img_msg)
+        if self.normalize:
+            norm_img = image / np.max(image)
+            norm_img_msg = self._bridge.cv2_to_imgmsg(norm_img, "32FC1")
+            norm_img_msg.header.stamp = stamp
+            norm_img_msg.header.seq = self.seq
+            # Send image message
+            self._norm_publisher.publish(norm_img_msg)
 
     def run(self):
         rospy.spin()
