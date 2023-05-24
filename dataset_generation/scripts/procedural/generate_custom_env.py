@@ -2,7 +2,13 @@ import argparse
 import os
 import shutil
 import pyvista as pv
-from subt_proc_gen.tunnel import TunnelNetwork, TunnelNetworkParams, Node, Tunnel
+from subt_proc_gen.tunnel import (
+    TunnelNetwork,
+    TunnelNetworkParams,
+    Node,
+    Tunnel,
+    GrownTunnelGenerationParams,
+)
 from subt_proc_gen.mesh_generation import (
     TunnelNewtorkMeshGenerator,
     TunnelNetworkPtClGenParams,
@@ -109,15 +115,11 @@ def main():
     tunnel_network = TunnelNetwork(params=tunnel_network_params)
     # Generate the network
     node_0_0 = list(tunnel_network.nodes)[0]
-    node_0_1 = Node((20, 0, 0))
-    node_0_2 = Node((30, 0, 0))
-    node_0_3 = Node((40, 0, 0))
-    node_0_4 = Node((60, 0, 0))
-    node_1_0 = Node((30, 60, 0))
-    tunnel_0_0 = tunnel_network.add_tunnel(Tunnel(nodes=[node_0_0, node_0_1]))
-    tunnel_0_1 = tunnel_network.add_tunnel(Tunnel(nodes=[node_0_1, node_0_2, node_0_3]))
-    tunnel_0_3 = tunnel_network.add_tunnel(Tunnel(nodes=[node_0_3, node_0_4]))
-    tunnel_1_0 = tunnel_network.add_tunnel(Tunnel(nodes=[node_0_2, node_1_0]))
+    tunnel_0 = Tunnel.grown(
+        node_0_0,
+        i_direction=(1, 0, 0),
+        params=GrownTunnelGenerationParams(200, 0, 0, 0, 0, 20, 30),
+    )
     ptcl_gen_params = TunnelNetworkPtClGenParams.random()
     ptcl_gen_params.general_fta_distance = 1
     slim_tunnel_params = TunnelPtClGenParams.from_defaults()
@@ -126,9 +128,6 @@ def main():
     fat_tunnel_params.radius = 7
     fat_tunnel_params.noise_relative_magnitude = 0
     ptcl_gen_params.pre_set_tunnel_params[tunnel_0_0] = slim_tunnel_params
-    ptcl_gen_params.pre_set_tunnel_params[tunnel_0_1] = fat_tunnel_params
-    ptcl_gen_params.pre_set_tunnel_params[tunnel_0_3] = slim_tunnel_params
-    ptcl_gen_params.pre_set_tunnel_params[tunnel_1_0] = slim_tunnel_params
     for intersection in tunnel_network.intersections:
         params = IntersectionPtClGenParams.from_defaults()
         params.radius = 5
@@ -156,9 +155,8 @@ def main():
 
     axis_data = gen_axis_data_file(mesh_generator)
     plotter.add_mesh(pv.PolyData(axis_data[:, :3]))
-    fta_dist = np.random.uniform(0, 2)
+    fta_dist = mesh_generator._ptcl_gen_params.general_fta_distance
     vertices = mesh_generator.mesh.points
-    vertices[np.where(vertices[:, 2] < -fta_dist), 2] = -fta_dist
     path_to_mesh = os.path.join(base_env_folder, "mesh.obj")
     mesh_generator.save_mesh(path_to_mesh)
     np.savetxt(os.path.join(base_env_folder, "axis.txt"), axis_data)

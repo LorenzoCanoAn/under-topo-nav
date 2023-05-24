@@ -20,6 +20,7 @@ import geometry_msgs
 import sensor_msgs
 from cv_bridge import CvBridge
 import time
+import pyvista as pv
 
 gaussian_witdth = np.arange(-3, 3, 0.1)
 GAUSSIAN = norm.pdf(gaussian_witdth, 0, 1)
@@ -149,6 +150,7 @@ class PoseAndLabelGenerator:
         axis_vectors,
         axis_radi,
         mesh: trimesh.Trimesh,
+        pyvista_mesh,
         dist_between_aps,
         max_hor_disp,
         max_vert_disp,
@@ -159,6 +161,7 @@ class PoseAndLabelGenerator:
             axis_points, axis_vectors, voxel_size=max(axis_radi)
         )
         self.mesh = mesh
+        self.pyvista_mesh = pyvista_mesh
         self.axis_points = axis_points
         self.axis_vectors = axis_vectors
         self.axis_radi = axis_radi
@@ -168,30 +171,39 @@ class PoseAndLabelGenerator:
         self.min_vert_disp = min_vert_disp
         self.max_inclination_rad = max_inclination_rad
 
-    def gen_one_sample(self, place="other"):
-        while True:
-            base_point_idx = np.random.randint(0, len(self.ap_manager.axis_points))
-            base_point = np.reshape(self.axis_points[base_point_idx, :], (1, 3))
-            base_vector = np.reshape(self.axis_vectors[base_point_idx, :], (1, 3))
-            local_radius = self.axis_radi[base_point_idx]
-            if place == "other":
-                if local_radius < 10:
-                    break
-            else:
-                if local_radius >= 10:
-                    break
+    def gen_one_sample(self, sample_type="other"):
+        plotter = pv.Plotter()
+        base_point_idx = np.random.randint(0, len(self.ap_manager.axis_points))
+        ap = np.reshape(self.axis_points[base_point_idx, :], (1, 3))
+        av = np.reshape(self.axis_vectors[base_point_idx, :], (1, 3))
+        ap_radius = self.axis_radi[base_point_idx]
+        plotter.add_mesh(
+            pv.PolyData(ap),
+            render_points_as_spheres=True,
+            point_size=10,
+            color="r",
+        )
+        plotter.add_mesh(
+            pv.PolyData(self.axis_points), render_points_as_spheres=True, point_size=4
+        )
         dist_to_axis = self.max_hor_disp * np.random.random()
-        if dist_to_axis > local_radius:
-            dist_to_axis = local_radius * 0.7
-        theta = np.arctan2(base_vector[0, 1], base_vector[0, 0])
+        theta = np.arctan2(av[0, 1], av[0, 0])
+        theta += np.pi / 2
         if np.random.random() > 0.5:
             theta += np.pi
-        x_disp = dist_to_axis * np.sin(theta)
-        y_disp = dist_to_axis * np.cos(theta)
+        x_disp = dist_to_axis * np.cos(theta)
+        y_disp = dist_to_axis * np.sin(theta)
         z_disp = np.random.uniform(self.min_vert_disp, self.max_vert_disp)
-        pose = base_point + np.reshape(np.array([x_disp, y_disp, z_disp]), (1, 3))
+        pose = ap + np.reshape(np.array([x_disp, y_disp, z_disp]), (1, 3))
         pose = np.reshape(pose, -1)
-        points_for_label = self.get_label_points(pose, local_radius)
+        plotter.add_mesh(
+            pv.PolyData(pose),
+            render_points_as_spheres=True,
+            point_size=10,
+            color="b",
+        )
+        plotter.add_mesh(self.pyvista_mesh, style="wireframe")
+        points_for_label = self.get_label_points(pose, ap_radius, plotter)
         roll = np.random.uniform(-self.max_inclination_rad, self.max_inclination_rad)
         pitch = np.random.uniform(-self.max_inclination_rad, self.max_inclination_rad)
         yaw = np.random.uniform(0, 2 * np.pi)
@@ -204,6 +216,7 @@ class PoseAndLabelGenerator:
             np.arctan2(points_for_label[:, 1], points_for_label[:, 0])
         )
         label = label_from_angles(yaw_of_points_deg.astype(int))
+        plotter.show()
         return pose, roll, pitch, yaw, label
 
     def gen_n_samples(self, n_samples, percentage_of_diaph_intersections):
@@ -217,10 +230,12 @@ class PoseAndLabelGenerator:
         for i in range(n_samples):
             print(f"{i:04d}", end="\r", flush=True)
             if j < n_diaph:
-                pose, roll, pitch, yaw, label = self.gen_one_sample(place="diaph_inter")
+                pose, roll, pitch, yaw, label = self.gen_one_sample(
+                    sample_type="diaph_inter"
+                )
                 j += 1
             else:
-                pose, roll, pitch, yaw, label = self.gen_one_sample(place="other")
+                pose, roll, pitch, yaw, label = self.gen_one_sample(sample_type="other")
             poses[i, :] = pose
             rolls[i, :] = roll
             pitches[i, :] = pitch
@@ -228,18 +243,24 @@ class PoseAndLabelGenerator:
             labels[i, :] = label
         return poses, rolls, pitches, yaws, labels
 
-    def get_label_points(self, point, label_dist):
+    def get_label_points(self, point, label_dist, plotter: pv.Plotter):
         axis_data = self.ap_manager.get_relevant_points(np.reshape(point, -1))
         points = axis_data[:, :3]
         vectors = axis_data[:, 3:6]
         dists = np.linalg.norm(points - point, axis=1)
         idxs_of_label_points = np.abs(dists - label_dist) < self.dist_between_aps / 2
         ap_at_distance = points[idxs_of_label_points, :]
+        plotter.add_mesh(
+            pv.PolyData(ap_at_distance),
+            color="g",
+            render_points_as_spheres=True,
+            point_size=10,
+        )
         av = vectors[idxs_of_label_points, :]
         p_to_ap_v = ap_at_distance - point
-        p_to_ap_v /= np.linalg.norm(p_to_ap_v, axis=1)
+        p_to_ap_v = p_to_ap_v / np.linalg.norm(p_to_ap_v, axis=1, keepdims=True)
         product = np.einsum("ij,ij->i", av, p_to_ap_v)
-        angles = np.arcos(np.abs(product))
+        angles = np.arccos(np.abs(product))
         ap_at_distance = ap_at_distance[np.where(angles < np.deg2rad(70))]
         # Check if ray from point intersects the mesh
         point = np.reshape(point, (1, 3))
@@ -352,7 +373,7 @@ class DatasetRecorder:
         delete_request = DeleteModelRequest()
         delete_request.model_name = "cave"
         self.delete_model_srv_proxy.call(delete_request)
-        time.sleep(5)
+        # time.sleep(1)
         spawn_request = SpawnModelRequest()
         spawn_request.model_name = "cave"
         spawn_request.model_xml = model_text
@@ -390,6 +411,7 @@ def main():
             axis_vectors,
             axis_radi,
             mesh=trimesh.load_mesh(mesh_file),
+            pyvista_mesh=pv.read_meshio(mesh_file),
             dist_between_aps=0.6,
             max_hor_disp=max_horizontal_displacement,
             max_vert_disp=max_vertical_displacement - fta_dist,
@@ -399,6 +421,7 @@ def main():
         poses, rolls, pitches, yaws, labels = pose_and_label_generator.gen_n_samples(
             n_samples, fraction_of_diaph_intersection
         )
+        exit()
         save_folder = os.path.join(abs_env_folder, "data")
         if os.path.exists(save_folder):
             if args.overwrite:
