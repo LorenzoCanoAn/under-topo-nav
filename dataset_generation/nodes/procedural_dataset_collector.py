@@ -25,6 +25,10 @@ import pyvista as pv
 gaussian_witdth = np.arange(-3, 3, 0.1)
 GAUSSIAN = norm.pdf(gaussian_witdth, 0, 1)
 GAUSSIAN = GAUSSIAN / max(GAUSSIAN)
+# TODO: Use the new flag to select between intersection and tunnel axis points
+# TODO: Use a fixed distance for label generation
+# TODO: Use the angle criterium to discard label points
+# TODO: Rotate the yaw of the robot within the plane that contains the axis vector
 
 
 def plot_label(label):
