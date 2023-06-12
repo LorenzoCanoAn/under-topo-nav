@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="scan_to_img" pkg="pointcloud_to_image" type="ptcl_to_img_node.py" output="screen">
+        <param name="conversor_type" value="3" />
+        <param name="input_topic" value="/scan" />
+        <param name="output_topic" value="/cenital_image" />
+        <param name="normalize" value="0" />
+        <param name="output_width" value="30" />
+        <param name="output_height" value="30" />
+        <param name="conversor/void_value" value="0" />
+        <param name="conversor/max_coord_val" value="30" />
+        <param name="conversor/img_size" value="30" />
+    </node>
+
+</launch>

@@ -14,7 +14,7 @@ class AngleToVelNode:
         rospy.init_node("angle_to_twist")
         self.publisher = rospy.Publisher("/cmd_vel", geometry_msgs.Twist, queue_size=10)
         self.subscriber = rospy.Subscriber(
-            "/corrected_angle",
+            "/estimated_relative_yaw",
             std_msgs.Float32,
             callback=self.angle_callback,
         )
@@ -29,7 +29,7 @@ class AngleToVelNode:
     def angle_to_speed(self, angle):
         if angle > math.pi:
             angle -= 2 * math.pi
-        w = angle
+        w = -angle
         if abs(w) > MAX_ANG_VEL:
             w = w / abs(w) * MAX_ANG_VEL
         v = (MAX_VEL * (min(2, 2) / 2)) - abs(w) / MAX_ANG_VEL * MAX_VEL * 0.2

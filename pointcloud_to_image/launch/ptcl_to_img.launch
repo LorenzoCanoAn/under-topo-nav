@@ -2,8 +2,15 @@
 <launch>
 
     <node name="pcl_to_img" pkg="pointcloud_to_image" type="ptcl_to_img_node.py" output="screen">
-      <remap from="pointcloud_topic" to="/velodyne_points"/>
-      <remap from="image_topic" to="/lidar_image"/>
+        <param name="conversor_type" value="2" />
+        <param name="input_topic" value="/velodyne_points" />
+        <param name="output_topic" value="/lidar_image" />
+        <param name="normalize" value="1" />
+        <param name="output_height" value="16" />
+        <param name="output_width" value="360" />
+        <param name="conversor/n_rays" value="16" />
+        <param name="conversor/cutoff_distance" value="50" />
+        <param name="conversor/void_value" value="50" />
     </node>
 
 </launch>

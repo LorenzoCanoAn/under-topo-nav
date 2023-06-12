@@ -13,7 +13,7 @@ def main():
     args = get_args()
     dataset_folder = args.dataset_folder
     env_folders = os.listdir(dataset_folder)
-    env_folders.sor()
+    env_folders.sort()
     for env_folder in env_folders:
         print(env_folder)
         abs_env_folder = os.path.join(dataset_folder, env_folder)
