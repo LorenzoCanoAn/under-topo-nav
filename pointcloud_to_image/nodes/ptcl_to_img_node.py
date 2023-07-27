@@ -31,18 +31,12 @@ class ConversionNode:
         self.input_topic = rospy.get_param("~input_topic", default="/velodyne_points")
         self.output_topic = rospy.get_param("~output_topic", default="/lidar_image")
         self.normalize = bool(int(rospy.get_param("~normalize", default=True)))
-        self.output_width = rospy.get_param("~output_width", default=None)
-        self.output_height = rospy.get_param("~output_height", default=None)
 
     def setup_conversor(self):
         if self.conversor_type == ConversorTypes.ptcl_to_height_depth_image:
             self.input_topic_type = PointCloud2
             z_res = int(rospy.get_param("~conversor/z_res", default=100))
             z_max = float(rospy.get_param("~conversor/z_max", default=5))
-            if self.output_height is None:
-                self.output_height = z_res
-            if self.output_width is None:
-                self.output_width = 360
             self.conversor = conversors.PtclToHeightImageConversor(
                 Z_RES=z_res, Z_MAX=z_max
             )
@@ -55,10 +49,6 @@ class ConversionNode:
             void_value = float(
                 rospy.get_param("~conversor/void_value", default=cutoff_distance)
             )
-            if self.output_height is None:
-                self.output_height = n_rays
-            if self.output_width is None:
-                self.output_width = 360
             self.conversor = conversors.PtclToAngleImageConversor(
                 n_rays=n_rays, cutoff_distance=cutoff_distance, void_value=void_value
             )
@@ -69,10 +59,6 @@ class ConversionNode:
                 rospy.get_param("~conversor/max_coord_val", default=30)
             )
             img_size = int(rospy.get_param("~conversor/img_size", default=30))
-            if self.output_height is None:
-                self.output_height = img_size
-            if self.output_width is None:
-                self.output_width = img_size
             self.conversor = conversors.ScanToCenithImage(
                 max_coord_val, img_size, void_value
             )
@@ -93,12 +79,6 @@ class ConversionNode:
         image = self.conversor(msg)
         self.seq += 1
         stamp = rospy.Time.now()
-        if image.shape[0] != self.output_height or image.shape[1] != self.output_width:
-            image = cv2.resize(
-                image,
-                dsize=(self.output_width, self.output_height),
-                interpolation=cv2.INTER_NEAREST,
-            )
         img_msg = self._bridge.cv2_to_imgmsg(image.astype(np.float32), "32FC1")
         img_msg.header.stamp = stamp
         img_msg.header.seq = self.seq
@@ -110,7 +90,6 @@ class ConversionNode:
             )
             norm_img_msg.header.stamp = stamp
             norm_img_msg.header.seq = self.seq
-            # Send image message
             self._norm_publisher.publish(norm_img_msg)
 
     def run(self):

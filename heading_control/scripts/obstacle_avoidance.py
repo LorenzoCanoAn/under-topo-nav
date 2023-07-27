@@ -14,54 +14,60 @@ class LaserData:
 
 class ObstacleAvoidanceNode:
     def __init__(self):
-        rospy.Subscriber(
-            "/followed_gallery", std_msgs.Float32, callback=self.angle_callback
+        self._input_topic = rospy.get_param("~input_topic", default="/desired_bearing")
+        self._output_topic = rospy.get_param(
+            "~output_topic", default="/corrected_bearing"
         )
+        self.passthrough = rospy.get_param("~passthrough", default=False)
         self.block = False
-        rospy.Subscriber("/scan", sensor_msgs.LaserScan,
-                         callback=self.scanner_callback)
         self.laser_data = LaserData()
-
         self.angle_publisher = rospy.Publisher(
-            "/corrected_angle", std_msgs.Float32, queue_size=10
+            self._output_topic, std_msgs.Float32, queue_size=1
         )
 
         # PLOTTING TOPICS
         self._final_angle_value_publisher = rospy.Publisher(
-            "/oa_final_weight", std_msgs.Float32MultiArray, queue_size=10
+            "/oa_final_weight", std_msgs.Float32MultiArray, queue_size=1
         )
         self._desired_angle_weight_publisher = rospy.Publisher(
-            "/oa_desired_angle_weight", std_msgs.Float32MultiArray, queue_size=10
+            "/oa_desired_angle_weight", std_msgs.Float32MultiArray, queue_size=1
         )
         self._scanner_weight_publisher = rospy.Publisher(
-            "/oa_laser_scan_weight", std_msgs.Float32MultiArray, queue_size=10
+            "/oa_laser_scan_weight", std_msgs.Float32MultiArray, queue_size=1
         )
         self._angles_publisher = rospy.Publisher(
-            "/oa_angles", std_msgs.Float32MultiArray, queue_size=10
+            "/oa_angles", std_msgs.Float32MultiArray, queue_size=1
         )
         self._final_angle_value_message = std_msgs.Float32MultiArray()
         self._desired_angle_weight_message = std_msgs.Float32MultiArray()
         self._scanner_weight_message = std_msgs.Float32MultiArray()
         self._angles_message = std_msgs.Float32MultiArray()
-
+        rospy.Subscriber(
+            self._input_topic,
+            std_msgs.Float32,
+            callback=self.angle_callback,
+            queue_size=1,
+        )
+        rospy.Subscriber("/scan", sensor_msgs.LaserScan, callback=self.scanner_callback)
 
     def angle_callback(self, msg):
+        if self.passthrough:
+            self.angle_publisher.publish(msg)
+            return
         if self.laser_data.angles is None:
             return
-
         objective_angle = msg.data
         desired_angle_weight = np.zeros(self.laser_data.angles.__len__())
         for n, i in enumerate(self.laser_data.angles):
-            desired_angle_weight[n] = np.math.pi - \
-                min_distance(i, objective_angle)
+            desired_angle_weight[n] = np.math.pi - min_distance(i, objective_angle)
         desired_angle_weight /= np.max(desired_angle_weight)
         desired_angle_weight = desired_angle_weight
         final_angle_value_vector = np.multiply(
-            desired_angle_weight, self.laser_data.filtered)
+            desired_angle_weight, self.laser_data.filtered
+        )
         max_idx = np.argmax(final_angle_value_vector)
         final_angle = self.laser_data.angles[max_idx]
         self.angle_publisher.publish(final_angle)
-
 
         self._final_angle_value_message.data = final_angle_value_vector
         self._desired_angle_weight_message.data = desired_angle_weight
@@ -75,9 +81,7 @@ class ObstacleAvoidanceNode:
 
     def scanner_callback(self, msg):
         scan_ranges = np.array(msg.ranges).flatten()
-        scan_angles = np.linspace(
-            msg.angle_min, msg.angle_max, len(scan_ranges)
-        )
+        scan_angles = np.linspace(msg.angle_min, msg.angle_max, len(scan_ranges))
         self.laser_data.angles = scan_angles
         self.laser_data.ranges = scan_ranges
         self.laser_data.filtered = filter_and_inflate_ranges(

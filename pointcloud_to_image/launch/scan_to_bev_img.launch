@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="input_topic" default="/scan" />
+    <arg name="output_topic" default="/cenital_image" />
+    <arg name="normalize" default="0" />
+    <arg name="void_value" default="0" />
+    <arg name="max_coord_val" default="15" />
+    <arg name="img_size" default="30" />
+    <node name="scan_to_img" pkg="pointcloud_to_image" type="scan_to_bev_image.py" output="screen">
+        <param name="conversor_type" value="3" />
+        <param name="input_topic" value="$(arg input_topic)" />
+        <param name="output_topic" value="$(arg output_topic)" />
+        <param name="normalize" value="0" />
+        <param name="conversor/void_value" value="$(arg void_value)" />
+        <param name="conversor/max_coord_val" value="$(arg max_coord_val)" />
+        <param name="conversor/img_size" value="$(arg img_size)" />
+    </node>
+</launch>

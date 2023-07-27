@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import threading
+
 PI = math.pi
 
 SINGLE_ANGLE_PLOT_DIST = 10
@@ -24,83 +25,110 @@ class Plotter:
         self._final_weight_updated = False
         self._desired_angle_weight_updated = False
         self._laser_scan_weight_updated = False
-        
-        rospy.Subscriber("/oa_angles",                  std_msgs.Float32MultiArray, callback=self.angles_callback)
+
+        rospy.Subscriber(
+            "/oa_angles", std_msgs.Float32MultiArray, callback=self.angles_callback
+        )
 
         while not self._angles_updated:
             time.sleep(0.5)
 
-        rospy.Subscriber("/followed_gallery",           std_msgs.Float32,           callback=self.desired_angle_callback)
-        rospy.Subscriber("/corrected_angle",            std_msgs.Float32,           callback=self.corrected_angle_callback)
-        rospy.Subscriber("/scan",                       sensor_msgs.LaserScan,      callback=self.scanner_callback)
-        rospy.Subscriber("/oa_final_weight",            std_msgs.Float32MultiArray, callback=self.final_weight_callback)
-        rospy.Subscriber("/oa_desired_angle_weight",    std_msgs.Float32MultiArray, callback=self.desired_angle_weight_callback)
-        rospy.Subscriber("/oa_laser_scan_weight",       std_msgs.Float32MultiArray, callback=self.laser_scan_weight_callback)
+        rospy.Subscriber(
+            "/predicted_bearing",
+            std_msgs.Float32,
+            callback=self.desired_angle_callback,
+        )
+        rospy.Subscriber(
+            "/corrected_bearing",
+            std_msgs.Float32,
+            callback=self.corrected_angle_callback,
+        )
+        rospy.Subscriber("/scan", sensor_msgs.LaserScan, callback=self.scanner_callback)
+        rospy.Subscriber(
+            "/oa_final_weight",
+            std_msgs.Float32MultiArray,
+            callback=self.final_weight_callback,
+        )
+        rospy.Subscriber(
+            "/oa_desired_angle_weight",
+            std_msgs.Float32MultiArray,
+            callback=self.desired_angle_weight_callback,
+        )
+        rospy.Subscriber(
+            "/oa_laser_scan_weight",
+            std_msgs.Float32MultiArray,
+            callback=self.laser_scan_weight_callback,
+        )
 
         self.draw_loop()
 
     def angles_callback(self, msg):
-        assert(isinstance(msg, std_msgs.Float32MultiArray))
+        assert isinstance(msg, std_msgs.Float32MultiArray)
         self._angles_plotting_data = msg.data
-        
+
         self._angles_updated = True
 
     def desired_angle_callback(self, msg):
-        assert(isinstance(msg, std_msgs.Float32))
+        assert isinstance(msg, std_msgs.Float32)
         x = [msg.data + i for i in [-0.01, 0, +0.01]]
-        y = [0,SINGLE_ANGLE_PLOT_DIST,0]
-        self._desired_angle_plotting_data = np.reshape(np.array([x, y]),[2,-1])
-        
+        y = [0, SINGLE_ANGLE_PLOT_DIST, 0]
+        self._desired_angle_plotting_data = np.reshape(np.array([x, y]), [2, -1])
+
         self._desired_angle_updated = True
- 
+
     def corrected_angle_callback(self, msg):
-        assert(isinstance(msg, std_msgs.Float32))
+        assert isinstance(msg, std_msgs.Float32)
         x = [msg.data + i for i in [-0.01, 0, +0.01]]
-        y = [0,SINGLE_ANGLE_PLOT_DIST,0]
-        self._corrected_angle_plotting_data = np.reshape(np.array([x, y]),[2,-1])
- 
+        y = [0, SINGLE_ANGLE_PLOT_DIST, 0]
+        self._corrected_angle_plotting_data = np.reshape(np.array([x, y]), [2, -1])
+
         self._corrected_angle_updated = True
- 
+
     def scanner_callback(self, msg):
-        assert(isinstance(msg, sensor_msgs.LaserScan))
-        self._scanner_plotting_data = np.reshape(np.array([self._angles_plotting_data,msg.ranges]),[2,-1]).T
-        
+        assert isinstance(msg, sensor_msgs.LaserScan)
+        self._scanner_plotting_data = np.reshape(
+            np.array([self._angles_plotting_data, msg.ranges]), [2, -1]
+        ).T
+
         self._scanner_updated = True
- 
+
     def final_weight_callback(self, msg):
-        assert(isinstance(msg, std_msgs.Float32MultiArray))
-        self._final_weight_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.data]),[2,-1]).T
-        
+        assert isinstance(msg, std_msgs.Float32MultiArray)
+        self._final_weight_plotting_data = np.reshape(
+            np.array([self._angles_plotting_data, msg.data]), [2, -1]
+        ).T
+
         self._final_weight_updated = True
- 
+
     def desired_angle_weight_callback(self, msg):
-        assert(isinstance(msg, std_msgs.Float32MultiArray))
-        self._desired_angle_weight_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.data]),[2,-1]).T
-        
+        assert isinstance(msg, std_msgs.Float32MultiArray)
+        self._desired_angle_weight_plotting_data = np.reshape(
+            np.array([self._angles_plotting_data, msg.data]), [2, -1]
+        ).T
+
         self._desired_angle_weight_updated = True
- 
+
     def laser_scan_weight_callback(self, msg):
-        assert(isinstance(msg, std_msgs.Float32MultiArray))
-        self._laser_scan_weight_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.data]),[2,-1]).T
-        
+        assert isinstance(msg, std_msgs.Float32MultiArray)
+        self._laser_scan_weight_plotting_data = np.reshape(
+            np.array([self._angles_plotting_data, msg.data]), [2, -1]
+        ).T
+
         self._laser_scan_weight_updated = True
- 
 
-
- 
     def draw_loop(self):
         # INIT THE PYPLOT VARIABLES
-        fig = plt.figure(figsize=(5,5))
+        fig = plt.figure(figsize=(5, 5))
         self._ax1 = fig.add_subplot(111, polar=True)
 
-        self._desired_angle_artist, = self._ax1.plot([], lw=6, c="k")
-        self._laserscan_artist = self._ax1.scatter([],[],c="k", s = 40)
-        self._desired_angle_weight_artist = self._ax1.scatter([],[],c="r", s = 40)
-        self._laserscan_weight_artist = self._ax1.scatter([],[],c="r", s = 40)
-        self._final_weight_artist = self._ax1.scatter([],[],c="r", s = 40)
-        self._corrected_angle_artist, = self._ax1.plot([], lw=6, c="b")
+        (self._desired_angle_artist,) = self._ax1.plot([], lw=6, c="k")
+        self._laserscan_artist = self._ax1.scatter([], [], c="k", s=40)
+        self._desired_angle_weight_artist = self._ax1.scatter([], [], c="r", s=40)
+        self._laserscan_weight_artist = self._ax1.scatter([], [], c="r", s=40)
+        self._final_weight_artist = self._ax1.scatter([], [], c="r", s=40)
+        (self._corrected_angle_artist,) = self._ax1.plot([], lw=6, c="b")
 
-        self._ax1. tick_params(labelsize=20)
+        self._ax1.tick_params(labelsize=20)
         self._ax1.set_ylim([0, 5])
         self._ax1.set_theta_zero_location("N")
         fig.canvas.draw()
@@ -110,19 +138,29 @@ class Plotter:
         while not rospy.is_shutdown():
             # set new drawings
             # NN OUTPUT
-            if False:#self._desired_angle_updated:
-                self._desired_angle_artist.set_data(self._desired_angle_plotting_data[0], self._desired_angle_plotting_data[1])
-            if False:#self._scanner_updated:
+            if self._desired_angle_updated:
+                self._desired_angle_artist.set_data(
+                    self._desired_angle_plotting_data[0],
+                    self._desired_angle_plotting_data[1],
+                )
+            if self._scanner_updated:
                 self._laserscan_artist.set_offsets(self._scanner_plotting_data)
-            if False:#self._desired_angle_weight_updated:
-                self._desired_angle_weight_artist.set_offsets(self._desired_angle_weight_plotting_data)
-            if False:#self._laser_scan_weight_updated:
-                self._laserscan_weight_artist.set_offsets(self._laser_scan_weight_plotting_data)
+            if self._desired_angle_weight_updated:
+                self._desired_angle_weight_artist.set_offsets(
+                    self._desired_angle_weight_plotting_data
+                )
+            if self._laser_scan_weight_updated:
+                self._laserscan_weight_artist.set_offsets(
+                    self._laser_scan_weight_plotting_data
+                )
             if self._final_weight_updated:
                 self._final_weight_artist.set_offsets(self._final_weight_plotting_data)
             if self._corrected_angle_updated:
-                self._corrected_angle_artist.set_data(self._corrected_angle_plotting_data[0], self._corrected_angle_plotting_data[1])
-                    
+                self._corrected_angle_artist.set_data(
+                    self._corrected_angle_plotting_data[0],
+                    self._corrected_angle_plotting_data[1],
+                )
+
             # restore background
             fig.canvas.restore_region(self._ax1background)
             # redraw the datapoints

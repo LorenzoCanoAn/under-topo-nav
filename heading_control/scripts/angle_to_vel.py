@@ -4,24 +4,50 @@ import geometry_msgs.msg as geometry_msgs
 import std_msgs.msg as std_msgs
 import math
 
-MAX_ANG_VEL = 0.4
-MAX_VEL = 1
-MIN_DIST = 1
+MAX_ANG_VEL = 2
+MAX_VEL = 5
 
 
 class AngleToVelNode:
     def __init__(self) -> None:
         rospy.init_node("angle_to_twist")
-        self.publisher = rospy.Publisher("/cmd_vel", geometry_msgs.Twist, queue_size=10)
+        self.max_ang_vel = MAX_ANG_VEL
+        self.max_vel = MAX_VEL
+        self.publisher = rospy.Publisher("/cmd_vel", geometry_msgs.Twist, queue_size=1)
+        self.input_topic = rospy.get_param("~input_topic")
         self.subscriber = rospy.Subscriber(
-            "/estimated_relative_yaw",
+            self.input_topic,
             std_msgs.Float32,
             callback=self.angle_callback,
+            queue_size=1,
+        )
+        self.change_vel_sub = rospy.Subscriber(
+            "/tunnel_traversal/new_max_vel",
+            std_msgs.Float32,
+            callback=self.change_max_vel_callback,
+            queue_size=1,
+        )
+        self.change_ang_vel_sub = rospy.Subscriber(
+            "/tunnel_traversal/new_max_ang_vel",
+            std_msgs.Float32,
+            callback=self.change_max_ang_vel_callback,
+            queue_size=1,
         )
         self.obstacle_sub = rospy.Subscriber(
-            "obstacle_detected", std_msgs.Bool, callback=self.obstacle_detected_callback
+            "/obstacle_detected",
+            std_msgs.Bool,
+            callback=self.obstacle_detected_callback,
+            queue_size=1,
         )
         self.obstacle_detected = False
+
+    def change_max_ang_vel_callback(self, msg: std_msgs.Float32):
+        self.max_ang_vel = msg.data
+        rospy.loginfo(f"Changed max ang vel to: {self.max_ang_vel}")
+
+    def change_max_vel_callback(self, msg: std_msgs.Float32):
+        self.max_vel = msg.data
+        rospy.loginfo(f"Changed max vel to: {self.max_vel}")
 
     def obstacle_detected_callback(self, msg: std_msgs.Bool):
         self.obstacle_detected = msg.data
@@ -29,12 +55,13 @@ class AngleToVelNode:
     def angle_to_speed(self, angle):
         if angle > math.pi:
             angle -= 2 * math.pi
-        w = -angle
-        if abs(w) > MAX_ANG_VEL:
-            w = w / abs(w) * MAX_ANG_VEL
-        v = (MAX_VEL * (min(2, 2) / 2)) - abs(w) / MAX_ANG_VEL * MAX_VEL * 0.2
+        w = angle * 3
+        if abs(w) > self.max_ang_vel:
+            w = w / abs(w) * self.max_ang_vel
+        v = (self.max_vel * (min(2, 2) / 2)) - abs(
+            w
+        ) / self.max_ang_vel * self.max_vel * 0.2
         v = max((v, 0))
-        print((v, w))
         return v, w
 
     def angle_callback(self, msg):
