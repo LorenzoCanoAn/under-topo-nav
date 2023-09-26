@@ -57,8 +57,7 @@ class PtclToAngleImageConversor:
         theta_angles = np.arctan2(point_array[:, 1], point_array[:, 0])
         theta_angles_deg = np.rad2deg(theta_angles)
         # theta_angles_shifted = 359 - ((theta_angles_deg + 360 + 180) % 360)
-        theta_angles_shifted = (theta_angles_deg + 360) % 360
-        theta_angles_double = (theta_angles_shifted * 2).astype(int)
+        theta_angles_shifted = ((theta_angles_deg + 360) % 360).astype(int)
         distance_to_z_axis = np.linalg.norm(point_array[:, 0:2], axis=1)
         tangent = np.reshape(np.divide(point_array[:, 2], distance_to_z_axis), (-1, 1))
         delta_angles_deg = (
@@ -67,8 +66,8 @@ class PtclToAngleImageConversor:
             .flatten()
         )
         distances = np.linalg.norm(point_array, axis=1).astype("float32")
-        image = np.ones((self.n_rays, 360 * 2)).astype("float32") * self.void_value
-        image[delta_angles_deg, theta_angles_double] = distances
+        image = np.ones((self.n_rays, 360)).astype("float32") * self.void_value
+        image[delta_angles_deg, theta_angles_shifted] = distances
         if self.cutoff_distance > 0:
             image = np.where(image > self.cutoff_distance, self.cutoff_distance, image)
         return image

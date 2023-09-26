@@ -106,7 +106,7 @@ class Plotter:
                 self._nn_output_lines.set_data(
                     self._angles, self._gallery_detection_vector
                 )
-            if False:  # self._updated_detected_galleries:
+            if self._updated_detected_galleries:
                 self._currently_detected_scatter.set_offsets(self._detected_galleries)
             if self._updated_tracked_galleries:
                 self._tracked_galleries_scatter.set_offsets(self._tracked_galleries)
