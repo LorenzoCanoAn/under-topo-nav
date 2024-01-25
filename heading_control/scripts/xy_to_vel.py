@@ -5,7 +5,7 @@ import std_msgs.msg as std_msgs
 import math
 
 MAX_ANG_VEL = 1
-MAX_VEL = 0.1
+MAX_VEL = 1
 
 
 class AngleToVelNode:
@@ -14,7 +14,7 @@ class AngleToVelNode:
         self.max_ang_vel = MAX_ANG_VEL
         self.max_vel = MAX_VEL
         self.publisher = rospy.Publisher("/cmd_vel", geometry_msgs.Twist, queue_size=1)
-        self.input_topic = rospy.get_param("~input_topic","/angle")
+        self.input_topic = rospy.get_param("~input_topic")
         self.subscriber = rospy.Subscriber(
             self.input_topic,
             std_msgs.Float32,
