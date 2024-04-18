@@ -34,20 +34,14 @@ class Plotter:
             callback=self.tracked_galleries_callback,
         )
         rospy.Subscriber("/back_gallery", Float32, callback=self.back_gallery_callback)
-        rospy.Subscriber(
-            "/followed_gallery", Float32, callback=self.followed_gallery_callback
-        )
-        rospy.Subscriber(
-            "/corrected_angle", Float32, callback=self.corrected_angle_callback
-        )
+        rospy.Subscriber("/followed_gallery", Float32, callback=self.followed_gallery_callback)
+        rospy.Subscriber("/corrected_angle", Float32, callback=self.corrected_angle_callback)
         self.draw_loop()
 
     def gallery_detection_vector_callback(self, msg):
-        raw_vector = np.array(msg.data)
-        # inverted = np.flip(raw_vector)
-        # gallery_detection_vector = np.roll(inverted, 180)
-        angles = np.linspace(0, 2 * PI, len(raw_vector))
-        self._gallery_detection_vector = raw_vector
+        gallery_detection_vector = np.array(msg.data)
+        angles = np.linspace(0, 2 * PI, len(gallery_detection_vector))
+        self._gallery_detection_vector = gallery_detection_vector
         self._angles = angles
         self._updated_nn_output = True
 
@@ -83,15 +77,9 @@ class Plotter:
         (self._nn_output_lines,) = self._ax1.plot([], lw=6, c="b")
         self._currently_detected_scatter = self._ax1.scatter([], [], c="b", s=300)
         self._tracked_galleries_scatter = self._ax1.scatter([], [], c="r", s=300)
-        self._back_gallery_scatter = self._ax1.scatter(
-            [], [], color="k", s=500, marker="P"
-        )
-        self._followed_gallery_scatter = self._ax1.scatter(
-            [], [], color="c", s=500, marker="P"
-        )
-        self._corrected_angle_scatter = self._ax1.scatter(
-            [], [], color="g", s=500, marker="P"
-        )
+        self._back_gallery_scatter = self._ax1.scatter([], [], color="k", s=500, marker="P")
+        self._followed_gallery_scatter = self._ax1.scatter([], [], color="c", s=500, marker="P")
+        self._corrected_angle_scatter = self._ax1.scatter([], [], color="g", s=500, marker="P")
         self._ax1.tick_params(labelsize=20)
         self._ax1.set_ylim([0, 1])
         self._ax1.set_theta_zero_location("N")
@@ -103,9 +91,7 @@ class Plotter:
             # set new drawings
             # NN OUTPUT
             if self._updated_nn_output:
-                self._nn_output_lines.set_data(
-                    self._angles, self._gallery_detection_vector
-                )
+                self._nn_output_lines.set_data(self._angles, self._gallery_detection_vector)
             if self._updated_detected_galleries:
                 self._currently_detected_scatter.set_offsets(self._detected_galleries)
             if self._updated_tracked_galleries:

@@ -5,7 +5,7 @@ import std_msgs.msg as std_msgs
 import math
 
 MAX_ANG_VEL = 2
-MAX_VEL = 5
+MAX_VEL = 0
 
 
 class AngleToVelNode:
@@ -58,9 +58,7 @@ class AngleToVelNode:
         w = angle * 3
         if abs(w) > self.max_ang_vel:
             w = w / abs(w) * self.max_ang_vel
-        v = (self.max_vel * (min(2, 2) / 2)) - abs(
-            w
-        ) / self.max_ang_vel * self.max_vel * 0.2
+        v = (self.max_vel * (min(2, 2) / 2)) - abs(w) / self.max_ang_vel * self.max_vel * 0.2
         v = max((v, 0))
         return v, w
 
