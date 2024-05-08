@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="path_to_model"
-        default="$(env HOME)/models/gallery_detection/procedural_datasets/dataset_03/gallery_detector_v3-_r10_lr002_3.torch" />
+        default="/media/lorenzo/SAM500/models/gallery-detection/GalleryDetectorV2.v4_128_epochs.torch" />
 
     <!-- NODES THAT RUN ON THE VISUALIZATION PC-->
 

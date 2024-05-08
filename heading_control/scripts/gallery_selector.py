@@ -10,8 +10,7 @@ import time
 
 def min_dis(angles, angle):
     distances = np.abs((angles - angle))
-    distances[distances > math.pi] = 2 * \
-        math.pi - distances[distances > math.pi]
+    distances[distances > math.pi] = 2 * math.pi - distances[distances > math.pi]
     return distances
 
 
@@ -44,7 +43,7 @@ class HeadingControlNode:
 
     def tracked_galleries_callback(self, msg):
         angles, confidences = np.split(np.array(msg.data), 2)
-        new_galleries = list(angles[confidences > 20*0.8])
+        new_galleries = list(angles[confidences > 20 * 0.8])
 
         new_galleries.sort()
         if self.galleries is None:
@@ -68,17 +67,14 @@ class HeadingControlNode:
 
             if self.state == "waiting_for_instructions":
                 self.followed_gallery = None
-                self.instructions = rospy.get_param(
-                    "/topological_instructions", default=None
-                )
+                self.instructions = rospy.get_param("/topological_instructions", default=None)
                 if not self.instructions is None:
                     try:
                         if len(self.instructions) > 0:
                             self.change_state("instructions_recieved")
                             self.curr_inst = 0
                     except:
-                        print(
-                            "The topological instructions parameter must be a list!")
+                        print("The topological instructions parameter must be a list!")
 
             elif self.state == "instructions_recieved":
                 self.changed_gallery_number = False
@@ -91,7 +87,7 @@ class HeadingControlNode:
                     self.transition_counter = 0
                     self.changed_gallery_number = False
                 self.transition_counter += 1
-                if self.transition_counter == 20:
+                if self.transition_counter == 30:
                     self.curr_inst += 1
                     if self.curr_inst >= len(self.instructions):
                         self.change_state("finished")
@@ -113,8 +109,7 @@ class HeadingControlNode:
     def choose_gallery_to_follow(self):
         if self.update_back_gallery():
             self.followed_gallery = self.galleries[
-                (self.back_gallery_idx() + self.instructions[self.curr_inst])
-                % len(self.galleries)
+                (self.back_gallery_idx() + self.instructions[self.curr_inst]) % len(self.galleries)
             ]
             self.change_state("following_gallery")
         else:
@@ -129,6 +124,10 @@ class HeadingControlNode:
         if len(self.galleries) == 0:
             return False
         galleries = np.array(self.galleries)
+        if not self.back_gallery is None:
+            if min(min_dis(galleries, self.back_gallery)) < np.deg2rad(10):
+                self.back_gallery = None
+                return self.update_back_gallery()
         if self.back_gallery is None:
             distances = min_dis(galleries, math.pi)
             new_back = galleries[np.argmin(distances)]

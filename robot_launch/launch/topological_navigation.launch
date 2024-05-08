@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="path_to_model"
-        default="$(env HOME)/models/gallery_detection/procedural_datasets/dataset_03/gallery_detector_v3-_r10_lr002_3.torch" />
+        default="/media/lorenzo/SAM500/models/gallery-detection/GalleryDetectorV2.v4_128_epochs.torch" />
 
     <!--Neural
     network nodes-->
@@ -17,7 +17,11 @@
  -->
     <node name="gallery_selector" pkg="heading_control" type="gallery_selector.py" output="screen" />
     <node name="obstacle_avoidance" pkg="heading_control" type="obstacle_avoidance.py"
-        output="screen" />
-    <node name="angle_to_twist" pkg="heading_control" type="angle_to_vel.py" output="screen" />
+        output="screen">
+        <param name="input_topic" value="/followed_gallery" />
+    </node>
+    <node name="angle_to_twist" pkg="heading_control" type="angle_to_vel.py" output="screen">
+        <param name="input_topic" value="/corrected_bearing" />
+    </node>
 
 </launch>

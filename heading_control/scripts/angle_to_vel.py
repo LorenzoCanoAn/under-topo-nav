@@ -3,18 +3,17 @@ import rospy
 import geometry_msgs.msg as geometry_msgs
 import std_msgs.msg as std_msgs
 import math
+import numpy as np
 
-MAX_ANG_VEL = 1
-MAX_VEL = 0.1
-MAX_ANG_VEL = 2
-MAX_VEL = 0
+MAX_ANG_VEL = 0.5
+MAX_VEL = 1
 
 
 class AngleToVelNode:
     def __init__(self) -> None:
         rospy.init_node("angle_to_twist")
-        self.max_ang_vel = MAX_ANG_VEL
-        self.max_vel = MAX_VEL
+        self.max_ang_vel = rospy.get_param("~max_ang_vel", MAX_ANG_VEL)
+        self.max_vel = rospy.get_param("~max_vel", MAX_VEL)
         self.publisher = rospy.Publisher("/cmd_vel", geometry_msgs.Twist, queue_size=1)
         self.input_topic = rospy.get_param("~input_topic")
         self.subscriber = rospy.Subscriber(
@@ -60,8 +59,11 @@ class AngleToVelNode:
         w = angle * 3
         if abs(w) > self.max_ang_vel:
             w = w / abs(w) * self.max_ang_vel
-        v = (self.max_vel * (min(2, 2) / 2)) - abs(w) / self.max_ang_vel * self.max_vel * 0.2
-        v = max((v, 0))
+        if abs(angle) > np.deg2rad(20):
+            v = 0
+        else:
+            v = (self.max_vel * (min(2, 2) / 2)) - abs(w) / self.max_ang_vel * self.max_vel * 0.2
+            v = max((v, 0))
         return v, w
 
     def angle_callback(self, msg):
