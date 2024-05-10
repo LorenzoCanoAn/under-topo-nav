@@ -10,9 +10,7 @@ import threading
 PI = math.pi
 import io
 import cv_bridge
-import cv2
 from sensor_msgs.msg import Image as ImageMsg
-import base64
 from PIL import Image
 
 
@@ -44,7 +42,8 @@ class Plotter:
         rospy.Subscriber("/back_gallery", Float32, callback=self.back_gallery_callback)
         rospy.Subscriber("/followed_gallery", Float32, callback=self.followed_gallery_callback)
         rospy.Subscriber("/corrected_angle", Float32, callback=self.corrected_angle_callback)
-        self.publisher = rospy.Publisher("/nn_plot", ImageMsg, queue_size=1)
+        if self._plot_on_rviz:
+            self.publisher = rospy.Publisher("/nn_plot", ImageMsg, queue_size=1)
         self.draw_loop()
 
     def gallery_detection_vector_callback(self, msg):
@@ -96,7 +95,8 @@ class Plotter:
         self._ax1background = fig.canvas.copy_from_bbox(self._ax1.bbox)
         if self._plot_on_window:
             plt.show(block=False)
-        self.bridge = cv_bridge.CvBridge()
+        if self._plot_on_rviz:
+            self.bridge = cv_bridge.CvBridge()
 
         while not rospy.is_shutdown():
             # set new drawings

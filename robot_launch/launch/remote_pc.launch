@@ -1,0 +1,20 @@
+<launch>
+    <!-- This script should launch:
+
+    * An rviz with the correct config file TODO
+    * The nn_and_traking plotter
+    * The obstacle_avoidance_plotter
+-->
+    <node name="tracking_plotter" pkg="topological_navigation_plotting"
+        type="nn_and_tracking_plots.py" output="log">
+        <param name="plot_on_window" value="false" type="bool" />
+        <param name="plot_on_rviz" value="true" type="bool" />
+    </node>
+    <node name="obstacle_avoidance_plotter" pkg="topological_navigation_plotting"
+        type="obstacle_avoidance_plot.py" output="log">
+        <param name="plot_on_window" value="false" type="bool" />
+        <param name="plot_on_rviz" value="true" type="bool" />
+    </node>
+    <node name="rviz" pkg="rviz" type="rviz" output="log"
+        args="-d $(find robot_launch)/config/config.rviz" />
+</launch>

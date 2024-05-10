@@ -10,6 +10,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import threading
+import io
+import cv_bridge
+from sensor_msgs.msg import Image as ImageMsg
+from PIL import Image
+
 
 PI = math.pi
 
@@ -25,6 +30,8 @@ class Plotter:
         self._final_weight_updated = False
         self._desired_angle_weight_updated = False
         self._laser_scan_weight_updated = False
+        self._plot_on_window = rospy.get_param("~plot_on_window", False)
+        self._plot_on_rviz = rospy.get_param("~plot_on_rviz", True)
 
         rospy.Subscriber("/oa_angles", std_msgs.Float32MultiArray, callback=self.angles_callback)
 
@@ -84,25 +91,33 @@ class Plotter:
 
     def scanner_callback(self, msg):
         assert isinstance(msg, sensor_msgs.LaserScan)
-        self._scanner_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.ranges]), [2, -1]).T
+        self._scanner_plotting_data = np.reshape(
+            np.array([self._angles_plotting_data, msg.ranges]), [2, -1]
+        ).T
 
         self._scanner_updated = True
 
     def final_weight_callback(self, msg):
         assert isinstance(msg, std_msgs.Float32MultiArray)
-        self._final_weight_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.data]), [2, -1]).T
+        self._final_weight_plotting_data = np.reshape(
+            np.array([self._angles_plotting_data, msg.data]), [2, -1]
+        ).T
 
         self._final_weight_updated = True
 
     def desired_angle_weight_callback(self, msg):
         assert isinstance(msg, std_msgs.Float32MultiArray)
-        self._desired_angle_weight_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.data]), [2, -1]).T
+        self._desired_angle_weight_plotting_data = np.reshape(
+            np.array([self._angles_plotting_data, msg.data]), [2, -1]
+        ).T
 
         self._desired_angle_weight_updated = True
 
     def laser_scan_weight_callback(self, msg):
         assert isinstance(msg, std_msgs.Float32MultiArray)
-        self._laser_scan_weight_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.data]), [2, -1]).T
+        self._laser_scan_weight_plotting_data = np.reshape(
+            np.array([self._angles_plotting_data, msg.data]), [2, -1]
+        ).T
 
         self._laser_scan_weight_updated = True
 
@@ -123,7 +138,10 @@ class Plotter:
         self._ax1.set_theta_zero_location("N")
         fig.canvas.draw()
         self._ax1background = fig.canvas.copy_from_bbox(self._ax1.bbox)
-        plt.show(block=False)
+        if self._plot_on_window:
+            plt.show(block=False)
+        if self._plot_on_rviz:
+            self.bridge = cv_bridge.CvBridge()
 
         while not rospy.is_shutdown():
             # set new drawings
@@ -136,7 +154,9 @@ class Plotter:
             if self._scanner_updated:
                 self._laserscan_artist.set_offsets(self._scanner_plotting_data)
             if self._desired_angle_weight_updated:
-                self._desired_angle_weight_artist.set_offsets(self._desired_angle_weight_plotting_data)
+                self._desired_angle_weight_artist.set_offsets(
+                    self._desired_angle_weight_plotting_data
+                )
             if self._laser_scan_weight_updated:
                 self._laserscan_weight_artist.set_offsets(self._laser_scan_weight_plotting_data)
             if self._final_weight_updated:
@@ -157,8 +177,17 @@ class Plotter:
             self._ax1.draw_artist(self._final_weight_artist)
             self._ax1.draw_artist(self._corrected_angle_artist)
             # fill the axes rectangle
-            fig.canvas.blit(self._ax1.bbox)
-            fig.canvas.flush_events()
+            if self._plot_on_window:
+                fig.canvas.blit(self._ax1.bbox)
+                fig.canvas.flush_events()
+            if self._plot_on_rviz:
+                buf = io.BytesIO()
+                fig.savefig(buf)
+                buf.seek(0)
+                pil_img = Image.open(buf)
+                pil_img.convert("RGB")
+                opencv_img = np.array(pil_img)[:, :, :3][:, :, ::-1]
+                self.publisher.publish(self.bridge.cv2_to_imgmsg(opencv_img))
 
 
 def main():
