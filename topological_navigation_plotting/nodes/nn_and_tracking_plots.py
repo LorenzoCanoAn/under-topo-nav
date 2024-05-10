@@ -8,6 +8,12 @@ import math
 import threading
 
 PI = math.pi
+import io
+import cv_bridge
+import cv2
+from sensor_msgs.msg import Image as ImageMsg
+import base64
+from PIL import Image
 
 
 class Plotter:
@@ -18,6 +24,8 @@ class Plotter:
         self._updated_back_gallery = False
         self._updated_followed_gallery = False
         self._updated_corrected_angle = False
+        self._plot_on_window = rospy.get_param("~plot_on_window", False)
+        self._plot_on_rviz = rospy.get_param("~plot_on_rviz", True)
         rospy.Subscriber(
             "/gallery_detection_vector",
             Float32MultiArray,
@@ -36,6 +44,7 @@ class Plotter:
         rospy.Subscriber("/back_gallery", Float32, callback=self.back_gallery_callback)
         rospy.Subscriber("/followed_gallery", Float32, callback=self.followed_gallery_callback)
         rospy.Subscriber("/corrected_angle", Float32, callback=self.corrected_angle_callback)
+        self.publisher = rospy.Publisher("/nn_plot", ImageMsg, queue_size=1)
         self.draw_loop()
 
     def gallery_detection_vector_callback(self, msg):
@@ -85,7 +94,9 @@ class Plotter:
         self._ax1.set_theta_zero_location("N")
         fig.canvas.draw()
         self._ax1background = fig.canvas.copy_from_bbox(self._ax1.bbox)
-        plt.show(block=False)
+        if self._plot_on_window:
+            plt.show(block=False)
+        self.bridge = cv_bridge.CvBridge()
 
         while not rospy.is_shutdown():
             # set new drawings
@@ -112,8 +123,17 @@ class Plotter:
             self._ax1.draw_artist(self._followed_gallery_scatter)
             self._ax1.draw_artist(self._corrected_angle_scatter)
             # fill the axes rectangle
-            fig.canvas.blit(self._ax1.bbox)
-            fig.canvas.flush_events()
+            if self._plot_on_window:
+                fig.canvas.blit(self._ax1.bbox)
+                fig.canvas.flush_events()
+            if self._plot_on_rviz:
+                buf = io.BytesIO()
+                fig.savefig(buf)
+                buf.seek(0)
+                pil_img = Image.open(buf)
+                pil_img.convert("RGB")
+                opencv_img = np.array(pil_img)[:, :, :3][:, :, ::-1]
+                self.publisher.publish(self.bridge.cv2_to_imgmsg(opencv_img))
 
 
 def main():
