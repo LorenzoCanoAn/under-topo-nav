@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="path_to_model"
-        default="/media/lorenzo/SAM500/models/gallery-detection/GalleryDetectorV2.v4_128_epochs.torch" />
+      default="$(env HOME)/models/GalleryDetectorV2.v4_128_epochs.torch"/>
 
     <!--Neural
     network nodes-->
