@@ -64,7 +64,8 @@ class Plotter:
             std_msgs.Float32MultiArray,
             callback=self.laser_scan_weight_callback,
         )
-
+        if self._plot_on_rviz:
+            self.publisher = rospy.Publisher("/oa_plot", ImageMsg, queue_size=1)
         self.draw_loop()
 
     def angles_callback(self, msg):
