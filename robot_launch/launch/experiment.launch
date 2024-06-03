@@ -1,4 +1,10 @@
 <launch>
     <include file="$(find robot_launch)/launch/topological_navigation.launch"></include>
+    <arg name="list_of_topics" doc="$(find robot_launch)/config/husky_topological_topics.txt" />
     <node pkg="velodyne_laserscan" type="velodyne_laserscan_node" name="velodyne_laserscan_node" />
+    <node
+        pkg="rosbag"
+        name="record"
+        type="record"
+        args="--output-prefix somport --topic=$(arg list_of_topics)" />
 </launch>
