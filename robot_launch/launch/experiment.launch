@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find robot_launch)/launch/topological_navigation.launch"></include>
+    <node pkg="velodyne_laserscan" type="velodyne_laserscan_node" name="velodyne_laserscan_node" />
+</launch>
