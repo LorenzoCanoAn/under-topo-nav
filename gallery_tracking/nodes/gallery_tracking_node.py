@@ -51,15 +51,15 @@ class GalleryTracker:
         # Remove detected galleries with small confidences
         normalized_confidences = values / max(values)
         angles = np.delete(angles, np.where(normalized_confidences < 0.2))
-        normalized_confidences = np.delete(normalized_confidences, np.where(normalized_confidences < 0.2))
+        normalized_confidences = np.delete(
+            normalized_confidences, np.where(normalized_confidences < 0.2)
+        )
 
         # Calculate the distance matrix between the detected galleries and the tracked galleries
         distance_matrix = np.zeros((len(self.galleries), len(angles)))
         for i, gallery in enumerate(self.galleries):
             distances = (gallery - angles + 2 * math.pi) % (2 * math.pi)
-            distances[distances > math.pi] = (
-                2 * math.pi - distances[distances > math.pi]
-            )
+            distances[distances > math.pi] = 2 * math.pi - distances[distances > math.pi]
             distance_matrix[i, :] = distances
         unasigned_angles = list(angles)
         galleries_to_delete = []
@@ -101,12 +101,8 @@ class GalleryTracker:
             gallery_was_deleted = False
             for gallery in self.galleries:
                 distances = (self.galleries - gallery + 2 * math.pi) % (2 * math.pi)
-                distances[distances > math.pi] = (
-                    2 * math.pi - distances[distances > math.pi]
-                )
-                close_to_gallery = np.array(
-                    np.where(distances < 20 / 180 * math.pi)
-                ).flatten()
+                distances[distances > math.pi] = 2 * math.pi - distances[distances > math.pi]
+                close_to_gallery = np.array(np.where(distances < 20 / 180 * math.pi)).flatten()
                 if len(close_to_gallery) > 1:
                     dominant_gallery = np.argmax(self.confidences[close_to_gallery])
                     close_to_gallery = np.delete(close_to_gallery, dominant_gallery)
@@ -149,7 +145,7 @@ class TrackingNode:
             return
         data = galleries
         output_message = std_msg.Float32MultiArray()
-        output_message.data=data
+        output_message.data = data
         self.tracked_galleries_publisher.publish(output_message)
 
     def odometry_callback(self, msg):
