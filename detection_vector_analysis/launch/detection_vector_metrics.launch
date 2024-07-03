@@ -1,0 +1,6 @@
+<launch>
+    <arg name="python_interpreter_path" default="$(env TOPOLOGICAL_NAVIGATION_PYTHON_PATH)" />
+    <node name="detection_vector_metrics" pkg="detection_vector_analysis"
+        type="detection_vector_metrics.py" launch-prefix="$(arg python_interpreter_path)"
+        output="screen"></node>
+</launch>

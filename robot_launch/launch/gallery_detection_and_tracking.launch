@@ -16,9 +16,13 @@
 
     <include file="$(find gallery_detection_ros)/launch/gallery_detection.launch">
         <arg name="path_to_model" value="$(arg path_to_model)" />
+        <arg name="window_width" value="80" />
     </include>
 
-    <include file="$(find gallery_tracking)/launch/gallery_tracking.launch"></include>
+    <include file="$(find gallery_tracking)/launch/gallery_tracking_v2.launch" output="screen">
+        <arg name="threshold_deg" value="40" />
+        <arg name="counter_threshold" value="10" />
+    </include>
 
 
 </launch>

@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-    <node name="gallery_tracking_node" pkg="gallery_tracking" type="gallery_tracking_node.py" output="log" />
+    <node name="gallery_tracking_node" pkg="gallery_tracking" type="gallery_tracking_node.py"
+        output="log" />
 </launch>

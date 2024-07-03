@@ -1,0 +1,6 @@
+<launch>
+    <arg name="python_interpreter_path" default="$(env TOPOLOGICAL_NAVIGATION_PYTHON_PATH)" />
+    <node name="n_over_n" pkg="detection_vector_analysis"
+        type="n_over_n.py" launch-prefix="$(arg python_interpreter_path)"
+        output="screen"></node>
+</launch>

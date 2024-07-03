@@ -15,7 +15,7 @@ class AngleToVelNode:
         self.max_ang_vel = rospy.get_param("~max_ang_vel", MAX_ANG_VEL)
         self.max_vel = rospy.get_param("~max_vel", MAX_VEL)
         self.publisher = rospy.Publisher("/cmd_vel", geometry_msgs.Twist, queue_size=1)
-        self.input_topic = rospy.get_param("~input_topic")
+        self.input_topic = rospy.get_param("~input_topic", default="angle_to_follow")
         self.subscriber = rospy.Subscriber(
             self.input_topic,
             std_msgs.Float32,

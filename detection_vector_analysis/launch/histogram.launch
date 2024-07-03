@@ -1,0 +1,6 @@
+<launch>
+    <arg name="python_interpreter_path" default="/bin/python3" />
+    <node name="histogram" pkg="detection_vector_analysis"
+        type="histogram.py" launch-prefix="$(arg python_interpreter_path)"
+        output="screen"></node>
+</launch>

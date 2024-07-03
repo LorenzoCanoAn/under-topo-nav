@@ -1,0 +1,12 @@
+<launch>
+    <arg name="section" value="complete" />
+    <include file="$(find somport_gazebo)/launch/launch_somport_section.launch">
+        <arg name="section" value="$(arg section)" />
+    </include>
+    <include file="$(find husky_gazebo)/launch/spawn_husky_velodyne.launch">
+        <arg name="x" value="48.25" />
+        <arg name="y" value="167.42" />
+        <arg name="z" value="-0.94" />
+        <arg name="yaw" value="1.43" />
+    </include>
+</launch>
