@@ -39,7 +39,7 @@ class Plotter:
             time.sleep(0.5)
 
         rospy.Subscriber(
-            "/predicted_bearing",
+            "/angle_to_follow",
             std_msgs.Float32,
             callback=self.desired_angle_callback,
         )
@@ -92,33 +92,25 @@ class Plotter:
 
     def scanner_callback(self, msg):
         assert isinstance(msg, sensor_msgs.LaserScan)
-        self._scanner_plotting_data = np.reshape(
-            np.array([self._angles_plotting_data, msg.ranges]), [2, -1]
-        ).T
+        self._scanner_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.ranges]), [2, -1]).T
 
         self._scanner_updated = True
 
     def final_weight_callback(self, msg):
         assert isinstance(msg, std_msgs.Float32MultiArray)
-        self._final_weight_plotting_data = np.reshape(
-            np.array([self._angles_plotting_data, msg.data]), [2, -1]
-        ).T
+        self._final_weight_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.data]), [2, -1]).T
 
         self._final_weight_updated = True
 
     def desired_angle_weight_callback(self, msg):
         assert isinstance(msg, std_msgs.Float32MultiArray)
-        self._desired_angle_weight_plotting_data = np.reshape(
-            np.array([self._angles_plotting_data, msg.data]), [2, -1]
-        ).T
+        self._desired_angle_weight_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.data]), [2, -1]).T
 
         self._desired_angle_weight_updated = True
 
     def laser_scan_weight_callback(self, msg):
         assert isinstance(msg, std_msgs.Float32MultiArray)
-        self._laser_scan_weight_plotting_data = np.reshape(
-            np.array([self._angles_plotting_data, msg.data]), [2, -1]
-        ).T
+        self._laser_scan_weight_plotting_data = np.reshape(np.array([self._angles_plotting_data, msg.data]), [2, -1]).T
 
         self._laser_scan_weight_updated = True
 
@@ -155,9 +147,7 @@ class Plotter:
             if self._scanner_updated:
                 self._laserscan_artist.set_offsets(self._scanner_plotting_data)
             if self._desired_angle_weight_updated:
-                self._desired_angle_weight_artist.set_offsets(
-                    self._desired_angle_weight_plotting_data
-                )
+                self._desired_angle_weight_artist.set_offsets(self._desired_angle_weight_plotting_data)
             if self._laser_scan_weight_updated:
                 self._laserscan_weight_artist.set_offsets(self._laser_scan_weight_plotting_data)
             if self._final_weight_updated:

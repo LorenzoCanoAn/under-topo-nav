@@ -1,27 +1,27 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="path_to_model"
-      default="$(env HOME)/models/GalleryDetectorV2.v4_128_epochs.torch"/>
-
+        default="$(env HOME)/models/GalleryDetectorV2.v4_128_epochs.torch" />
+    <arg
+        name="path_to_interpreter" default="/home/lorenzo/miniconda3/envs/train_nn/bin/python3" />
     <!--Neural
     network nodes-->
-    <include file="$(find robot_launch)/launch/gallery_detection_and_tracking.launch">
+    <include
+        file="$(find robot_launch)/launch/gallery_detection_and_tracking.launch">
         <arg name="path_to_model" value="$(arg path_to_model)" />
     </include>
 
     <!-- NAVIGATION NODES-->
-    <!-- NODES THAT RUN ON THE VISUALIZATION PC-->
-    <!-- NODES THAT RUN ON THE ROBOT-->
-    <!--   <machine name="husky" address="cpr-a200-0678" env-loader="~/catkin_ws/devel/env.sh"
-    user="administrator" default="true"/>
- -->
-    <node name="gallery_selector" pkg="heading_control" type="gallery_selector.py" output="screen" />
-    <node name="obstacle_avoidance" pkg="heading_control" type="obstacle_avoidance.py"
+    <node
+        name="topological_navigation" pkg="heading_control" type="topological_navigation.py"
+        output="screen" launch-prefix="$(arg path_to_interpreter)" />
+    <node name="obstacle_avoidance"
+        pkg="heading_control" type="obstacle_avoidance.py"
         output="screen">
-        <param name="input_topic" value="/followed_gallery" />
+        <param name="input_topic" value="/angle_to_follow" />
     </node>
-    <node name="angle_to_twist" pkg="heading_control" type="angle_to_vel.py" output="screen">
+    <node name="angle_to_twist"
+        pkg="heading_control" type="angle_to_vel.py" output="screen">
         <param name="input_topic" value="/corrected_bearing" />
     </node>
-
 </launch>

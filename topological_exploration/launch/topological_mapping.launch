@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <!-- Args-->
+    <arg name="launch_prefix" default="$(env TOPOLOGICAL_NAVIGATION_PYTHON_PATH)" />
+    <!-- Nodes-->
+    <node name="topological-exploration" pkg="topological_exploration"
+        type="topological_exploration_node.py" output="screen" launch-prefix="$(arg launch_prefix)"></node>
+    <node name="topological-map-plotting" pkg="topological_exploration"
+        type="topological_map_plotting_node.py" output="screen" launch-prefix="$(arg launch_prefix)"></node>
+</launch>

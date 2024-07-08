@@ -53,9 +53,7 @@ class Plotter:
         rospy.Subscriber("/back_gallery", Float32, callback=self.back_gallery_callback)
         rospy.Subscriber("/angle_to_follow", Float32, callback=self.followed_gallery_callback)
         rospy.Subscriber("/corrected_angle", Float32, callback=self.corrected_angle_callback)
-        rospy.Subscriber(
-            "/is_detection_stable", DetectionVectorStability, callback=self.stability_callback
-        )
+        rospy.Subscriber("/is_detection_stable", DetectionVectorStability, callback=self.stability_callback)
         rospy.Subscriber("/current_state", String, callback=self.current_state)
         if self._plot_on_rviz:
             self.publisher = rospy.Publisher("/nn_plot", ImageMsg, queue_size=1)
@@ -121,9 +119,7 @@ class Plotter:
         self._back_gallery_scatter = self._ax1.scatter([], [], color="k", s=500, marker="P")
         self._followed_gallery_scatter = self._ax1.scatter([], [], color="c", s=500, marker="P")
         self._corrected_angle_scatter = self._ax1.scatter([], [], color="g", s=500, marker="P")
-        self._tracked_galleries_id_text: list[Text] = [
-            self._ax1.text(0, 0, "", fontsize="xx-large") for _ in range(10)
-        ]
+        self._tracked_galleries_id_text: list[Text] = [self._ax1.text(0, 0, "", fontsize="xx-large") for _ in range(10)]
         self._ax1.tick_params(labelsize=20)
         self._ax1.set_ylim([0, 1.3])
         if self._polar:
@@ -143,9 +139,7 @@ class Plotter:
             if self._updated_nn_output:
                 self._nn_output_lines.set_data(self._angles, self._gallery_detection_vector)
             if self._updated_filtered_detection_vector:
-                self._nn_filtered_vector_lines.set_data(
-                    self._angles, self._filtered_detection_vector
-                )
+                self._nn_filtered_vector_lines.set_data(self._angles, self._filtered_detection_vector)
             if self._updated_detected_galleries:
                 self._currently_detected_scatter.set_offsets(self._detected_galleries)
             if self._updated_tracked_galleries:
