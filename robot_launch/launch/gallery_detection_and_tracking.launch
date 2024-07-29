@@ -19,7 +19,7 @@
         <arg name="window_width" value="80" />
     </include>
 
-    <include file="$(find gallery_tracking)/launch/gallery_tracking_v2.launch" output="screen">
+    <include file="$(find gallery_tracking)/launch/gallery_tracking_v2.launch">
         <arg name="threshold_deg" value="40" />
         <arg name="counter_threshold" value="10" />
     </include>
