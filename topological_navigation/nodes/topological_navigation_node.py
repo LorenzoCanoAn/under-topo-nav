@@ -1,11 +1,12 @@
 import rospy
 from gallery_tracking.msg import TrackedGalleries
 import numpy as np
-from std_msgs.msg import Float32, Bool, String
-from heading_control.msg import topological_instructions
+from std_msgs.msg import Float32, String
+import actionlib
+from topological_navigation.msg import topo_navigateAction, topo_navigateFeedback, topo_navigateGoal, topo_navigateResult
 from gallery_detection_ros.msg import DetectionVectorStability
 from nav_msgs.msg import Odometry
-from time import time
+from time import time, sleep
 from enum import Enum, auto
 
 
@@ -56,7 +57,7 @@ def get_distances_to_angle(angle: float, angles: np.ndarray):
     return distances
 
 
-def warp_angle(angle):
+def warp_angle_pi(angle):
     angle = angle % (np.pi * 2)
     if angle > np.pi:
         angle = np.pi * 2 - angle
@@ -78,12 +79,9 @@ class TopologicalNavigationNode:
         self.angle_publisher = rospy.Publisher("/angle_to_follow", Float32, queue_size=1)
         self.state_publisher = rospy.Publisher("/current_state", String, queue_size=1)
         self.change_state(S.WAITING_FOR_INSTRUCTIONS)
+        self.server = actionlib.SimpleActionServer("topo_navigate", topo_navigateAction, self.action_callback, False)
+        self.server.start()
         rospy.Subscriber("tracked_galleries", TrackedGalleries, self.tracked_galleries_callback)
-        rospy.Subscriber(
-            "topological_instructions",
-            topological_instructions,
-            self.topological_instructions_callback,
-        )
         rospy.Subscriber("/is_detection_stable", DetectionVectorStability, self.stability_callback)
         rospy.Subscriber("/odometry/filtered", Odometry, self.odometry_callback)
 
@@ -97,7 +95,7 @@ class TopologicalNavigationNode:
         if not self.current_galleries is None:
             if len(self.current_galleries.angles) == 0:
                 return
-            if self.back_gallery_id in self.current_galleries.ids:
+            if self.back_gallery_id in self.current_galleries.ids and np.abs(warp_angle_pi(self.back_gallery_angle)) > np.pi / 2:
                 self.back_gallery_angle = self.current_galleries.angles[self.current_galleries.ids.index(self.back_gallery_id)]
             else:
                 self.select_new_back_gallery()
@@ -126,9 +124,9 @@ class TopologicalNavigationNode:
         self.state_publisher.publish(state_string)
         self.state = new_state
 
-    def parse_instructions(self, instructions: topological_instructions):
+    def parse_instructions(self, instructions: list[str]):
         self.instructions = []
-        for instruction in instructions.instructions:
+        for instruction in instructions:
             self.instructions.append(Instruction.from_str(instruction))
 
     def gallery_id_closest_to_angle(self, angle, threshold=False):
@@ -159,13 +157,19 @@ class TopologicalNavigationNode:
             zipped_gals.append((id_, ang))
 
         def key(element):
-            return element[1]
+            return element[1] % (2 * np.pi)
 
         zipped_gals.sort(key=key)
+        rospy.logerr("Setting followed galleries by id")
+        rospy.logerr("There are currently the following galleries:")
+        for id, ang in zipped_gals:
+            rospy.logerr(f"id: {id}, angle: {np.rad2deg(ang)}")
         for n, (id_, ang) in enumerate(zipped_gals):
             if id_ == self.back_gallery_id:
+                rospy.logerr(f"The ID of the back gallery is {id_}, with a position in the zipped array of {n}")
                 n_ = (n + idx) % len(self.current_galleries.ids)
                 self.set_followed_gallery(zipped_gals[n_][0])
+                rospy.logerr(f"The position of the gallery will then be {n_} with an id of {zipped_gals[n_][0]}")
 
     def state_machine_iteration(self):
         self.update_back_gallery()
@@ -179,14 +183,19 @@ class TopologicalNavigationNode:
         elif self.state == S.SELECTING_INSTRUCTION:
             if self.current_instruction_n == len(self.instructions):
                 self.current_instruction = None
+                self.server.set_succeeded(topo_navigateResult(True))
                 self.change_state(S.FINISHED)
             else:
                 self.current_instruction = self.instructions[self.current_instruction_n]
                 self.current_instruction.startup()
+                feed = topo_navigateFeedback()
+                feed.n_completed = self.current_instruction_n
+                self.server.publish_feedback(feed)
                 self.change_state(S.EXECUTING_INSTRUCTION)
         elif self.state == S.EXECUTING_INSTRUCTION:
             result = self.current_instruction.execute()
             if result == InstructionResult.FINISHED_NOT_OK:
+                self.server.set_aborted(topo_navigateResult(True))
                 self.change_state(S.FINISHED)
             elif result == InstructionResult.FINISHED_OK:
                 self.change_state(S.FINISHED_INSTRUCTION)
@@ -216,9 +225,11 @@ class TopologicalNavigationNode:
         self.set_galstate()
         self.state_machine_iteration()
 
-    def topological_instructions_callback(self, msg: topological_instructions):
-        self.parse_instructions(msg)
+    def action_callback(self, msg: topo_navigateGoal):
+        self.parse_instructions(msg.topological_instructions)
         self.change_state(S.INSTRUCTIONS_RECIEVED)
+        while not self.state in [S.FINISHED, S.WAITING_FOR_INSTRUCTIONS]:
+            sleep(0.1)
 
     def odometry_callback(self, msg: Odometry):
         if not self.current_instruction is None:
@@ -272,7 +283,9 @@ class Instruction:
             data = str_split[1]
         else:
             data = None
-        assert action in STR_TO_INST_CLASS.keys()
+        print(action)
+        if not action in STR_TO_INST_CLASS.keys():
+            raise AssertionError(f"{action} not in STR_TO_INST_CLASS")
         return STR_TO_INST_CLASS[action](data)
 
     def __init__(
@@ -364,18 +377,35 @@ class AdvanceUntilNodeInst(Instruction):
 
     def __init__(self, data):
         super().__init__()
+        self.counter = 0
 
     def _execute(self):
         if self.n_executions == 0:
             if self.galstate in [GalState.GALLERY, GalState.END_OF_GAL]:
                 self.node.set_followed_gallery_by_angle(0)
+                self.exited_starting_end_of_gal = False
                 return InstructionResult.NOT_FINISHED
             else:
                 return InstructionResult.ERROR
         else:
-            self.node.follow_cfg()
-            if self.galstate in [GalState.INTERSECTION, GalState.END_OF_GAL] and self.node.is_stable:
-                return InstructionResult.FINISHED_OK
+            if self.node.is_stable:
+                if not self.node.follow_cfg():
+                    self.node.follow_cfg(force=True)
+            else:
+                self.node.follow_cfg(force=True)
+            if self.galstate == GalState.INTERSECTION and self.node.is_stable:
+                self.counter += 1
+                if self.counter > 10:
+                    return InstructionResult.FINISHED_OK
+            elif self.galstate == GalState.END_OF_GAL:
+                if self.exited_starting_end_of_gal:
+                    if self.node.is_stable and self.counter > 10:
+                        return InstructionResult.FINISHED_OK
+                    self.counter += 1
+                else:
+                    return InstructionResult.NOT_FINISHED
+            elif self.galstate == GalState.GALLERY and self.node.is_stable:
+                self.exited_starting_end_of_gal = True
             else:
                 return InstructionResult.NOT_FINISHED
 
@@ -411,6 +441,9 @@ class TakeInst(Instruction):
 
     def _execute(self):
         if self.state == TakeState.STARTING:
+            if self.galstate == GalState.END_OF_GAL:
+                self.node.set_followed_gallery_by_angle(0)
+                self.node.follow_cfg()
             if self.galstate == GalState.GALLERY:
                 self.change_state(TakeState.ENTERING_GALLERY)
             elif self.galstate == GalState.INTERSECTION:
@@ -449,8 +482,11 @@ class TakeInst(Instruction):
             elif self.galstate == GalState.END_OF_GAL and self.node.is_stable:
                 return InstructionResult.FINISHED_NOT_OK
         elif self.state == TakeState.IN_END_OF_GAL:
-            self.node.set_followed_gallery_by_angle(0)
-            self.node.follow_cfg()
+            if not self.node.follow_cfg():
+                self.node.set_followed_gallery_by_angle(0)
+                self.node.follow_cfg()
+            if GalState == GalState.GALLERY:
+                self.change_state(TakeState.ENTERING_GALLERY)
         elif self.state == TakeState.EXITING_END_OF_GAL:
             self.node.follow_cfg()
             if self.galstate == GalState.GALLERY:
@@ -466,7 +502,8 @@ class TakeInst(Instruction):
                 threshold=self.directions_threshold,
             )
         elif isinstance(self.data, int):
-            return self.node.set_followed_gallery_by_index(self.data)
+            self.node.set_followed_gallery_by_index(self.data)
+            return True
 
 
 class StayInst(Instruction):

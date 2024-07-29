@@ -13,7 +13,8 @@
 
     <!-- NAVIGATION NODES-->
     <node
-        name="topological_navigation" pkg="heading_control" type="topological_navigation.py"
+        name="topological_navigation" pkg="topological_navigation"
+        type="topological_navigation_node.py"
         output="screen" launch-prefix="$(arg path_to_interpreter)" />
     <node name="obstacle_avoidance"
         pkg="heading_control" type="obstacle_avoidance.py"

@@ -1,5 +1,5 @@
 <launch>
-    <arg name="section" value="complete" />
+    <arg name="section" value="complete_modified" />
     <include file="$(find somport_gazebo)/launch/launch_somport_section.launch">
         <arg name="section" value="$(arg section)" />
     </include>

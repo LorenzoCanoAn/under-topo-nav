@@ -111,18 +111,12 @@ class Gallery:
                 self.angle = angles[min_distance_idx]
                 self.value_history.add_data(values[min_distance_idx])
                 self.seen_counter += 1
-                if (
-                    self.seen_counter > self.seen_to_set_id_threshold
-                    and self.value_history.mean() > self.value_threshold_to_detect
-                ):
+                if self.seen_counter > self.seen_to_set_id_threshold and self.value_history.mean() > self.value_threshold_to_detect:
                     self.state = GALLERY_TRACKED
                     self.id = self.assign_id()
                 return min_distance_idx
         elif self.state == GALLERY_TRACKED:
-            if (
-                min_distance < self.angle_threshold
-                and values[min_distance_idx] > self.value_threshold_to_remove
-            ):  # I has been detected again
+            if min_distance < self.angle_threshold and values[min_distance_idx] > self.value_threshold_to_remove:  # I has been detected again
                 self.value_history.add_data(values[min_distance_idx])
                 self.angle = angles[min_distance_idx]
                 return min_distance_idx
@@ -204,7 +198,7 @@ class TrackingNode:
         rospy.init_node("gallery_tracking_node")
         Gallery.angle_threshold = np.deg2rad(rospy.get_param("~threshold_deg", 50))
         Gallery.seen_to_set_id_threshold = rospy.get_param("~counter_threshold", 10)
-        Gallery.value_threshold_to_detect = rospy.get_param("~value_threshold_to_detect", 0.7)
+        Gallery.value_threshold_to_detect = rospy.get_param("~value_threshold_to_detect", 0.5)
         Gallery.value_threshold_to_remove = rospy.get_param("~value_threshold_to_remove", 0.4)
         print(np.rad2deg(Gallery.angle_threshold))
         self.prev_z = 0
@@ -219,15 +213,14 @@ class TrackingNode:
             nav_msg.Odometry,
             callback=self.odometry_callback,
         )
-        self.tracked_galleries_publisher = rospy.Publisher(
-            "/tracked_galleries", TrackedGalleries, queue_size=10
-        )
+        self.tracked_galleries_publisher = rospy.Publisher("/tracked_galleries", TrackedGalleries, queue_size=10)
 
     def currently_detected_callback(self, msg: DetectedGalleries):
         angles = np.array(msg.angles)
         values = np.array(msg.values)
         self.tracker.new_galleries(angles, values)
         output_message = TrackedGalleries()
+        output_message.header = msg.header
         output_message.angles = self.tracker.angles()
         output_message.ids = self.tracker.ids()
         self.tracked_galleries_publisher.publish(output_message)

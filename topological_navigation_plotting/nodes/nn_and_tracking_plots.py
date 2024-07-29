@@ -114,12 +114,13 @@ class Plotter:
         self._ax1 = fig.add_subplot(111, polar=self._polar)
         (self._nn_output_lines,) = self._ax1.plot([], lw=6, c="b")
         (self._nn_filtered_vector_lines,) = self._ax1.plot([], lw=6, c="k")
-        self._currently_detected_scatter = self._ax1.scatter([], [], c="b", s=300)
+        self._currently_detected_scatter = self._ax1.scatter([], [], c="b", s=400)
         self._tracked_galleries_scatter = self._ax1.scatter([], [], c="r", s=300)
         self._back_gallery_scatter = self._ax1.scatter([], [], color="k", s=500, marker="P")
         self._followed_gallery_scatter = self._ax1.scatter([], [], color="c", s=500, marker="P")
         self._corrected_angle_scatter = self._ax1.scatter([], [], color="g", s=500, marker="P")
         self._tracked_galleries_id_text: list[Text] = [self._ax1.text(0, 0, "", fontsize="xx-large") for _ in range(10)]
+        plt.xticks([0, np.pi, np.pi * 2], labels=[0, 180, 360])
         self._ax1.tick_params(labelsize=20)
         self._ax1.set_ylim([0, 1.3])
         if self._polar:

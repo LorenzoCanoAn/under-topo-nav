@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <node pkg="topological_navigation" type="topological_navigation.py"
+        name="topological_navigation_node">
+    </node>
+</launch>

@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools >= 61.0.0"]
+build-backend = "setuptools.build_meta"
+
+# ...
+
+[project]
+name = "topological_map"
+version = "0.0.1"
+
+
+[tool.setuptools.packages.find]
+namespaces = true
+where = ["src"]
+include = ["topological_map"]
