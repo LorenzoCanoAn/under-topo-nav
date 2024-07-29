@@ -371,6 +371,8 @@ class AdvanceSecInst(Instruction):
 
 
 class AdvanceUntilNodeInst(Instruction):
+    counter_threshold = 5
+
     @property
     def description(self):
         return f"Advance until node."
@@ -395,11 +397,11 @@ class AdvanceUntilNodeInst(Instruction):
                 self.node.follow_cfg(force=True)
             if self.galstate == GalState.INTERSECTION and self.node.is_stable:
                 self.counter += 1
-                if self.counter > 10:
+                if self.counter > self.counter_threshold:
                     return InstructionResult.FINISHED_OK
             elif self.galstate == GalState.END_OF_GAL:
                 if self.exited_starting_end_of_gal:
-                    if self.node.is_stable and self.counter > 10:
+                    if self.node.is_stable and self.counter > self.counter_threshold:
                         return InstructionResult.FINISHED_OK
                     self.counter += 1
                 else:

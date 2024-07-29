@@ -170,10 +170,6 @@ def update_map_when_arrived_at_node(map: TopologicalMap, odom: Odometry, gals: T
         node = Node(NodeType.VIRTUAL, xyz_of_virt_node(odom, ang))
         new_nodes.append(node)
         map.add_edge(current_node, node)
-    new_nodes = new_nodes[::-1]
-    print("#########")
-    for edge in map.edges:
-        print(edge.nodes[0]._pose, "//", edge.nodes[0]._pose)
     return new_nodes
 
 
@@ -200,7 +196,6 @@ class TopologicalMappingNode:
         self.current_stability: DetectionVectorStability = None
         self.current_odom: Odometry = None
         self._bridge = CvBridge()
-        self.history: list[Node] = []
         self.nodes_to_explore: list[Node] = []
         self.change_state(States.START)
         # Get params
