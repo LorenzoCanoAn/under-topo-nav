@@ -3,7 +3,7 @@
     <arg name="path_to_model"
         default="$(env HOME)/models/GalleryDetectorV2.v4_128_epochs.torch" />
     <arg
-        name="path_to_interpreter" default="/home/lorenzo/miniconda3/envs/train_nn/bin/python3" />
+        name="path_to_interpreter" default="$(env TOPOLOGICAL_NAVIGATION_PYTHON_PATH)" />
     <!--Neural
     network nodes-->
     <include
