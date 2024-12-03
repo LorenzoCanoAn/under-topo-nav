@@ -1,5 +1,20 @@
 <?xml version="1.0"?>
 <launch>
+    <!--TOPICS ARGS-->
+    <arg name="detected_galleries_topic"/>
+    <arg name="odometry_topic"/>
+    <arg name="tracked_galleries_topic"/>
+    <!--PARAMS ARGS-->
+    <arg name="threshold_deg" default="30" />
+    <arg name="counter_threshold" default="10" />
+
+    <!--NODE LAUNCHING-->
     <node name="gallery_tracking_node" pkg="gallery_tracking" type="gallery_tracking_node.py"
-        output="log" />
+        output="screen">
+        <param name="~threshold_deg" value="$(arg threshold_deg)" type="double" />
+        <param name="~counter_threshold" value="$(arg counter_threshold)" type="int" />
+        <remap from="input_galleries_topic" to="$(arg detected_galleries_topic)"/>
+        <remap from="input_odometry_topic" to="$(arg odometry_topic)"/>
+        <remap from="output_tracked_galleries_topic" to="$(arg tracked_galleries_topic)"/>
+    </node>
 </launch>

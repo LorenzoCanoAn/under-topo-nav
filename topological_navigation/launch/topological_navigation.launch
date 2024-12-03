@@ -1,6 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <node pkg="topological_navigation" type="topological_navigation.py"
-        name="topological_navigation_node">
+    <!-- TOPIC ARGUMENTS-->
+    <arg name="angle_to_follow_topic"/>
+    <arg name="current_navigation_state_topic"/>
+    <arg name="navigation_feedback_topic"/>
+    <arg name="navigation_result_topic"/>
+    <arg name="tracked_galleries_topic"/>
+    <arg name="cnn_detection_stability_topic"/>
+    <arg name="odometry_topic"/>
+    <arg name="topological_instructions_topic"/>
+    <!-- OTHER ARGUMENTS-->
+    <arg name="python_interpreter_path" default="$(env TOPOLOGICAL_NAVIGATION_PYTHON_PATH)" />
+
+    <node pkg="topological_navigation" type="topological_navigation_node.py"
+        name="topological_navigation_node" launch-prefix="$(arg python_interpreter_path)" output="screen">
+        <remap from="output_angle_to_follow_topic"            to="$(arg angle_to_follow_topic)"/>
+        <remap from="output_current_state_topic"              to="$(arg current_navigation_state_topic)"/>
+        <remap from="output_feedback_topic"                   to="$(arg navigation_feedback_topic)"/>
+        <remap from="output_result_topic"                     to="$(arg navigation_result_topic)"/>
+        <remap from="input_tracked_galleries_topic"           to="$(arg tracked_galleries_topic)"/>
+        <remap from="input_stability_topic"                   to="$(arg cnn_detection_stability_topic)"/>
+        <remap from="input_odometry_topic"                    to="$(arg odometry_topic)"/>
+        <remap from="input_topological_instructions_topic"    to="$(arg topological_instructions_topic)"/>
     </node>
 </launch>

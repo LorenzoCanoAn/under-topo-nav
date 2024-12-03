@@ -1,159 +1,228 @@
 #!/bin/python3
 import rospy
-import std_msgs.msg as std_msg
 import nav_msgs.msg as nav_msg
+from gallery_tracking.msg import TrackedGalleries
+from gallery_detection_ros.msg import DetectedGalleries
 import math
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 
-def euler_from_quaternion(x, y, z, w):
-    """
-    Convert a quaternion into euler angles (roll, pitch, yaw)
-    roll is rotation around x in radians (counterclockwise)
-    pitch is rotation around y in radians (counterclockwise)
-    yaw is rotation around z in radians (counterclockwise)
-    """
-    t0 = +2.0 * (w * x + y * z)
-    t1 = +1.0 - 2.0 * (x * x + y * y)
-    roll_x = math.atan2(t0, t1)
+def euler_from_quaternion(quat):
+    return Rotation.from_quat(quat).as_euler("xyz")  # in radians
 
-    t2 = +2.0 * (w * y - z * x)
-    t2 = +1.0 if t2 > +1.0 else t2
-    t2 = -1.0 if t2 < -1.0 else t2
-    pitch_y = math.asin(t2)
 
-    t3 = +2.0 * (w * z + x * y)
-    t4 = +1.0 - 2.0 * (y * y + z * z)
-    yaw_z = math.atan2(t3, t4)
+def get_distances_to_angle(angle: float, angles: np.ndarray):
+    distances = (angles - angle) % (2 * np.pi)
+    indexer = np.where(distances > np.pi)
+    distances[indexer] = 2 * np.pi - distances[indexer]
+    return distances
 
-    return roll_x, pitch_y, yaw_z  # in radians
+
+GALLERY_NOT_TRACKED = 0
+GALLERY_TRACKED = 1
+GALLERY_LOST = 2
+GALLERY_TO_REMOVE = 3
+
+
+class Queue:
+    """This is a generic data storage class that keeps a certain number of elements. If the number of elements is 
+    equal to it's length, is new element is added, but the oldest element is removed"""
+    def __init__(self, length):
+        self.data = list()
+        self.length = length
+
+    def add_data(self, data):
+        if len(self.data) < self.length:
+            self.data.append(data)
+        else:
+            self.data.pop(0)
+            self.data.append(data)
+
+    def mean(self):
+        return np.mean(np.array(self.data))
+
+    def max(self):
+        return np.max(np.array(self.data))
+
+
+class Gallery:
+    seen_to_set_id_threshold: int = 10
+    unseen_to_remove_id_threshold: int = 2
+    angle_threshold = np.deg2rad(10)
+    value_threshold_to_detect = 0.7
+    value_threshold_to_remove = 0.4
+    id_counter = 0
+    history_length = 10
+
+    @classmethod
+    def update_angle_threshold(cls, new_angle_threshold):
+        cls.angle_threshold = new_angle_threshold
+
+    @classmethod
+    def update_counter_threshold(cls, new_counter_threshold):
+        cls.seen_to_set_id_threshold = new_counter_threshold
+
+    @classmethod
+    def increase_counter(cls):
+        cls.id_counter += int(1)
+
+    @classmethod
+    def assign_id(cls):
+        cls.increase_counter()
+        return int(cls.id_counter)
+
+    def __init__(self, angle, value):
+        self.id = None
+        self.seen_counter = 0  # Keep track of how many times it has been seen
+        self.unseen_counter = 0  # Keep track of how many times it has not been seen
+        self.state = GALLERY_NOT_TRACKED
+        self.angle = angle
+        self.value_history = Queue(self.history_length)
+
+    def new_galleries(self, angles: np.ndarray, values: np.ndarray):
+        
+        assert len(angles) == len(values)
+        if len(angles) == 0:
+            min_distance = np.pi
+        else:
+            distances = get_distances_to_angle(self.angle, angles)
+            min_distance_idx = np.argmin(distances)
+            min_distance = distances[min_distance_idx]
+        if self.state == GALLERY_NOT_TRACKED:  # If the gallery has not started to be tracked
+            if min_distance < self.angle_threshold:  # I has been detected again
+                self.angle = angles[min_distance_idx]
+                self.value_history.add_data(values[min_distance_idx])
+                self.seen_counter += 1
+                if self.seen_counter > self.seen_to_set_id_threshold and self.value_history.mean() > self.value_threshold_to_detect:
+                    self.state = GALLERY_TRACKED
+                    self.id = self.assign_id()
+                return min_distance_idx
+        elif self.state == GALLERY_TRACKED:
+            if min_distance < self.angle_threshold and values[min_distance_idx] > self.value_threshold_to_remove:  # I has been detected again
+                self.value_history.add_data(values[min_distance_idx])
+                self.angle = angles[min_distance_idx]
+                return min_distance_idx
+            else:
+                self.unseen_counter += 1
+                if self.unseen_counter >= self.unseen_to_remove_id_threshold:
+                    print(f"Gallery {self.id} set to lost")
+                    self.state = GALLERY_LOST
+        elif self.state == GALLERY_LOST:
+            if min_distance < self.angle_threshold:  # I has been detected again
+                self.angle = angles[min_distance_idx]
+                self.state = GALLERY_TRACKED
+                self.unseen_counter = 0
+                return min_distance_idx
+            else:
+                self.unseen_counter += 1
+                if self.unseen_counter >= self.unseen_to_remove_id_threshold * 2:
+                    self.state = GALLERY_LOST
+
+    def new_odometry(self, odometry_turn: float):
+        self.angle = (self.angle - odometry_turn) % (np.pi * 2)
 
 
 class GalleryTracker:
     def __init__(self):
-        self.galleries = np.zeros(0)
-        self.confidences = np.zeros(0)
-        self.block_odom = True
-        self.block_gallery = False
-        self.max_confidence = 20
+        self.galleries: list[Gallery] = []
+        self.back_gallery_id = -1
 
-    def new_odom(self, turn):
-        if self.block_odom:
-            return
-        self.galleries = (self.galleries - turn + 2 * math.pi) % (2 * math.pi)
+    def key(self, element: Gallery):
+        return element.id
+
+    @property
+    def tracked_galleries(self):
+        return [gallery for gallery in self.galleries if gallery.state == GALLERY_TRACKED]
+
+    @property
+    def lost_galleries(self):
+        return [gallery for gallery in self.galleries if gallery.state == GALLERY_LOST]
+
+    @property
+    def non_tracked_galleries(self):
+        return [gallery for gallery in self.galleries if gallery.state == GALLERY_NOT_TRACKED]
+
+    @property
+    def sorted_galleries(self):
+        temp = self.tracked_galleries
+        temp.sort(key=self.key, reverse=False)
+        return temp + self.lost_galleries + self.non_tracked_galleries
 
     def new_galleries(self, angles, values):
-        if self.block_gallery:
-            return
-        self.block_gallery = True
-        self.block_odom = True
+        new_angles = angles
+        new_values = values
+        for gallery in self.sorted_galleries:
+            sel_ang_id = gallery.new_galleries(new_angles, new_values)
+            if sel_ang_id is False:
+                pass
+            elif not sel_ang_id is None:
+                new_angles = np.delete(new_angles, sel_ang_id)
+                new_values = np.delete(new_values, sel_ang_id)
+            else:
+                if gallery.state == GALLERY_TO_REMOVE:
+                    self.galleries.remove(gallery)
 
-        # Remove detected galleries with small confidences
-        normalized_confidences = values / max(values)
-        angles = np.delete(angles, np.where(normalized_confidences < 0.2))
-        normalized_confidences = np.delete(
-            normalized_confidences, np.where(normalized_confidences < 0.2)
-        )
+        for new_angle, new_value in zip(new_angles, new_values):
+            self.galleries.append(Gallery(new_angle, new_value))
+        # Get back gallery
+        if len(self.tracked_galleries) > 0:
+            ids = [g.id for g in self.tracked_galleries]
+            dsts = np.array([g.angle for g in self.tracked_galleries])
+            bgidx = np.argmin(get_distances_to_angle(np.pi, dsts))
+            self.back_gallery_id = ids[bgidx]
 
-        # Calculate the distance matrix between the detected galleries and the tracked galleries
-        distance_matrix = np.zeros((len(self.galleries), len(angles)))
-        for i, gallery in enumerate(self.galleries):
-            distances = (gallery - angles + 2 * math.pi) % (2 * math.pi)
-            distances[distances > math.pi] = 2 * math.pi - distances[distances > math.pi]
-            distance_matrix[i, :] = distances
-        unasigned_angles = list(angles)
-        galleries_to_delete = []
+    def angles(self):
+        return [gallery.angle for gallery in self.tracked_galleries]
 
-        for i in range(len(self.galleries)):
-            distances = distance_matrix[i, :]
-            j = np.argmin(distances)
-            min_distance = distances[j]
-            gallery_re_observed = False
+    def ids(self):
+        return [gallery.id for gallery in self.tracked_galleries]
 
-            if i == np.argmin(distance_matrix[:, j]):
-                if min_distance < 20 / 180 * math.pi:
-                    self.galleries[i] = angles[j]
-                    self.confidences[i] = min(
-                        normalized_confidences[j] + self.confidences[i], self.max_confidence
-                    )
-                    unasigned_angles.remove(angles[j])
-                    gallery_re_observed = True
-
-            if not gallery_re_observed:
-                self.confidences[i] -= 2
-                if self.confidences[i] < 0:
-                    galleries_to_delete.append(i)
-
-        galleries_to_delete.sort(reverse=True)
-        for i in galleries_to_delete:
-            self.galleries = np.delete(self.galleries, i)
-            self.confidences = np.delete(self.confidences, i)
-
-        for a in unasigned_angles:
-            self.galleries = np.append(self.galleries, a)
-            self.confidences = np.append(
-                self.confidences, normalized_confidences[list(angles).index(a)]
-            )
-
-        # Delete galleries too close to each other
-        gallery_was_deleted = True
-        while gallery_was_deleted:
-            gallery_was_deleted = False
-            for gallery in self.galleries:
-                distances = (self.galleries - gallery + 2 * math.pi) % (2 * math.pi)
-                distances[distances > math.pi] = 2 * math.pi - distances[distances > math.pi]
-                close_to_gallery = np.array(np.where(distances < 20 / 180 * math.pi)).flatten()
-                if len(close_to_gallery) > 1:
-                    dominant_gallery = np.argmax(self.confidences[close_to_gallery])
-                    close_to_gallery = np.delete(close_to_gallery, dominant_gallery)
-                    close_to_gallery = list(close_to_gallery)
-                    close_to_gallery.sort(reverse=True)
-                    for gal_to_del in close_to_gallery:
-                        self.galleries = np.delete(self.galleries, gal_to_del)
-                        self.confidences = np.delete(self.confidences, gal_to_del)
-                    gallery_was_deleted = True
-
-        self.block_odom = False
-        self.block_gallery = False
-        return np.append(self.galleries, self.confidences)
+    def new_odom(self, turn):
+        for gal in self.galleries:
+            gal.new_odometry(turn)
 
 
 class TrackingNode:
     def __init__(self):
         rospy.init_node("gallery_tracking_node")
-        self.tracker = GalleryTracker()
+        Gallery.angle_threshold = np.deg2rad(rospy.get_param("~threshold_deg", 50))
+        Gallery.seen_to_set_id_threshold = rospy.get_param("~counter_threshold", 10) # Number of times a gallery has to be seen to be considered as Tracked
+        Gallery.value_threshold_to_detect = rospy.get_param("~value_threshold_to_detect", 0.5) # Value the peak of the gallery detection must reach
+        Gallery.value_threshold_to_remove = rospy.get_param("~value_threshold_to_remove", 0.4)
+        print(np.rad2deg(Gallery.angle_threshold))
         self.prev_z = 0
+        self.tracker = GalleryTracker()
+        self.back_gallery = None
         self.gallery_subscriber = rospy.Subscriber(
-            "/currently_detected_galleries",
-            std_msg.Float32MultiArray,
+            "input_galleries_topic",
+            DetectedGalleries,
             callback=self.currently_detected_callback,
         )
         self.odometry_subscriber = rospy.Subscriber(
-            "/odometry/filtered",
+            "input_odometry_topic",
             nav_msg.Odometry,
             callback=self.odometry_callback,
         )
-        self.tracked_galleries_publisher = rospy.Publisher(
-            "/tracked_galleries", std_msg.Float32MultiArray, queue_size=10
-        )
+        self.tracked_galleries_publisher = rospy.Publisher("output_tracked_galleries_topic", TrackedGalleries, queue_size=10)
 
-    def currently_detected_callback(self, msg):
-        assert msg.data.__len__() % 2 == 0
-        reshaped = np.reshape(msg.data, (2, -1))
-        galleries = self.tracker.new_galleries(reshaped[0, :], reshaped[1, :])
-        if galleries is None:
-            return
-        data = galleries
-        output_message = std_msg.Float32MultiArray()
-        output_message.data = data
+    def currently_detected_callback(self, msg: DetectedGalleries):
+        angles = np.array(msg.angles)
+        values = np.array(msg.values)
+        self.tracker.new_galleries(angles, values)
+        output_message = TrackedGalleries()
+        output_message.header = msg.header
+        output_message.angles = self.tracker.angles()
+        output_message.ids = self.tracker.ids()
+        output_message.back_gallery = self.tracker.back_gallery_id
         self.tracked_galleries_publisher.publish(output_message)
 
-    def odometry_callback(self, msg):
-
+    def odometry_callback(self, msg: nav_msg.Odometry):
         q = msg.pose.pose.orientation
-        x, y, z = euler_from_quaternion(q.x, q.y, q.z, q.w)
-        turn = z - self.prev_z
-        self.tracker.new_odom(turn)
+        x, y, z = euler_from_quaternion(np.array((q.x, q.y, q.z, q.w)))
+        if hasattr(self, "prev_z"):
+            turn = z - self.prev_z
+            self.tracker.new_odom(turn)
         self.prev_z = z
 
 

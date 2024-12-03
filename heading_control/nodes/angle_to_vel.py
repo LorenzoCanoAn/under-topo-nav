@@ -14,28 +14,27 @@ class AngleToVelNode:
         rospy.init_node("angle_to_twist")
         self.max_ang_vel = rospy.get_param("~max_ang_vel", MAX_ANG_VEL)
         self.max_vel = rospy.get_param("~max_vel", MAX_VEL)
-        self.publisher = rospy.Publisher("/cmd_vel", geometry_msgs.Twist, queue_size=1)
-        self.input_topic = rospy.get_param("~input_topic", default="angle_to_follow")
+        self.publisher = rospy.Publisher("output_cmd_vel", geometry_msgs.Twist, queue_size=1)
         self.subscriber = rospy.Subscriber(
-            self.input_topic,
+            "input_desired_angle",
             std_msgs.Float32,
             callback=self.angle_callback,
             queue_size=1,
         )
         self.change_vel_sub = rospy.Subscriber(
-            "/tunnel_traversal/new_max_vel",
+            "input_new_max_vel",
             std_msgs.Float32,
             callback=self.change_max_vel_callback,
             queue_size=1,
         )
         self.change_ang_vel_sub = rospy.Subscriber(
-            "/tunnel_traversal/new_max_ang_vel",
+            "input_new_max_ang_vel",
             std_msgs.Float32,
             callback=self.change_max_ang_vel_callback,
             queue_size=1,
         )
         self.obstacle_sub = rospy.Subscriber(
-            "/obstacle_detected",
+            "input_obstacle_detected",
             std_msgs.Bool,
             callback=self.obstacle_detected_callback,
             queue_size=1,

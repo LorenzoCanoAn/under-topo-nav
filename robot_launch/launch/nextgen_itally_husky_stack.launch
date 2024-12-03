@@ -1,0 +1,107 @@
+<launch>
+    <!-- Namespace-->
+    <arg name="husky_namespace" value="cpr_husky" />
+    <!-- TOPIC ARGUMENTS-->
+    <arg name="pointcloud_topic"                        default="velodyne_points" />
+    <arg name="depth_image_topic"                       default="depth_image" />
+    <arg name="cnn_prediction_topic"                    default="gallery_detection_cnn_prediction" />
+    <arg name="detected_galleries_topic"                default="currently_detected_galleries" />
+    <arg name="filtered_cnn_prediction_topic"           default="filtered_gallery_detection_cnn_prediction"/>
+    <arg name="tracked_galleries_topic"                 default="tracked_galleries"/>
+    <arg name="cnn_detection_stability_topic"           default="cnn_prediction_is_stable" />
+    <arg name="topological_navigation_plot_topic"       default="topo_plot"/>
+    <arg name="angle_to_follow_topic"                   default="angle_to_follow"/>
+    <arg name="current_navigation_state_topic"          default="navigation_state"/>
+    <arg name="navigation_feedback_topic"               default="navigation_feedback"/>
+    <arg name="navigation_result_topic"                 default="navigation_result"/>
+    <arg name="topological_instructions_topic"          default="topological_instructions"/>
+    <arg name="oa_corrected_angle_topic"                default="corrected_angle"/>
+    <arg name="oa_final_weights_topic"                  default="oa_final_weights"/>
+    <arg name="oa_desired_angle_weights_topic"          default="oa_desired_angle_weights"/>
+    <arg name="oa_laser_scan_weights_topic"             default="oa_laser_scan_weights"/>
+    <arg name="oa_angles_topic"                         default="oa_angles"/>
+    <arg name="laser_scan_topic"                        default="scan"/>
+    <arg name="cmd_vel_topic"                           default="cmd_vel"/>
+    <arg name="velocity_control_max_vel_topic"          default="set_max_linear_speed"/>
+    <arg name="velocity_control_max_angvel_topic"       default="set_max_angular_speed"/>
+    <arg name="obstacle_detected_topic"                 default="is_obstacle_detected"/>
+    <!--WORLD ARGUMENTS-->
+    <arg name="use_somport" default="true"/>
+    <arg name="path_to_world" default="true"/>
+
+    <!-- LAUNCH GAZEBO-->
+    <group if="use_somport">
+        <include file="$(find somport_gazebo)/launch/launch_somport_section.launch"></include>
+    </group> 
+    <groun unless="use_somport">
+        <include file="$(find gazebo_ros)/launch/empty_world.launch">
+            <arg name="world_name" value="$(arg path_to_world)" />
+        </include>
+    </groun>
+
+    <!-- SPAWN HUSKY-->
+    <include file="$(find husky_gazebo)/launch/spawn_husky.launch">
+        <arg name="robot_namespace" value="$(arg husky_namespace)" />
+    </include>
+
+    <group ns="$(arg husky_namespace)">
+        <group ns="topological_navigation">
+            <!-- Detection-->
+            <include file="$(find gallery_detection_ros)/launch/gallery_detection.launch">
+                <arg name="pointcloud_topic" value="/$(arg husky_namespace)/$(arg pointcloud_topic)" />
+                <arg name="depth_image_topic" value="$(arg depth_image_topic)" />
+                <arg name="cnn_prediction_topic" value="$(arg cnn_prediction_topic)" />
+                <arg name="detected_galleries_topic" value="$(arg detected_galleries_topic)" />
+                <arg name="filtered_cnn_prediction_topic" value="$(arg filtered_cnn_prediction_topic)"/>
+                <arg name="cnn_detection_stability_topic" value="$(arg cnn_detection_stability_topic)"/>
+            </include>
+            <!-- Tracking-->
+            <include file="$(find gallery_tracking)/launch/gallery_tracking.launch">
+                <arg name="detected_galleries_topic" value="$(arg detected_galleries_topic)"/>
+                <arg name="odometry_topic" value="/$(arg husky_namespace)/odometry/filtered"/>
+                <arg name="tracked_galleries_topic" value="$(arg tracked_galleries_topic)"/>
+            </include>
+            <!-- Navigation-->
+            <include file="$(find topological_navigation)/launch/topological_navigation.launch">
+                <arg name="angle_to_follow_topic"               value="$(arg angle_to_follow_topic)"/>
+                <arg name="current_navigation_state_topic"      value="$(arg current_navigation_state_topic)"/>
+                <arg name="navigation_feedback_topic"           value="$(arg navigation_feedback_topic)"/>
+                <arg name="navigation_result_topic"             value="$(arg navigation_result_topic)"/>
+                <arg name="tracked_galleries_topic"             value="$(arg tracked_galleries_topic)"/>
+                <arg name="cnn_detection_stability_topic"       value="$(arg cnn_detection_stability_topic)"/>
+                <arg name="odometry_topic"                      value="/$(arg husky_namespace)/odometry/filtered"/>
+                <arg name="topological_instructions_topic"      value="$(arg topological_instructions_topic)"/>
+            </include>
+            <!-- Obstacle Avoidance-->
+            <include file="$(find heading_control)/launch/oa_stack.launch">
+                <arg name="oa_corrected_angle_topic"                    default="$(arg oa_corrected_angle_topic)"/>
+                <arg name="oa_final_weights_topic"                      default="$(arg oa_final_weights_topic)"/>
+                <arg name="oa_desired_angle_weights_topic"              default="$(arg oa_desired_angle_weights_topic)"/>
+                <arg name="oa_laser_scan_weights_topic"                 default="$(arg oa_laser_scan_weights_topic)"/>
+                <arg name="oa_angles_topic"                             default="$(arg oa_angles_topic)"/>
+                <arg name="laser_scan_topic"                            default="/$(arg husky_namespace)/$(arg laser_scan_topic)"/>
+                <arg name="cmd_vel_topic"                               default="/$(arg husky_namespace)/$(arg cmd_vel_topic)"/>
+                <arg name="desired_angle_topic"                         default="$(arg angle_to_follow_topic)"/>
+                <arg name="velocity_control_max_vel_topic"              default="$(arg velocity_control_max_vel_topic)"/>
+                <arg name="velocity_control_max_angvel_topic"           default="$(arg velocity_control_max_angvel_topic)"/>
+                <arg name="velocity_control_obstacle_detected_topic"    default="$(arg obstacle_detected_topic)"/>
+            </include>
+            <!-- Angle to Vel-->
+            <!-- Plotting-->
+            <group ns="plotting">
+                <arg name="topo_ns" value="/$(arg husky_namespace)/topological_navigation/"/>
+                <include file="$(find topological_navigation_plotting)/launch/all_plots.launch" >
+                    <arg name="cnn_prediction_topic" value="$(arg topo_ns)$(arg cnn_prediction_topic)"/>
+                    <arg name="detected_galleries_topic" value="$(arg topo_ns)$(arg detected_galleries_topic)"/>
+                    <arg name="filtered_cnn_prediction_topic" value="$(arg topo_ns)$(arg filtered_cnn_prediction_topic)"/>
+                    <arg name="tracked_galleries_topic" value="$(arg topo_ns)$(arg tracked_galleries_topic)"/>
+                    <arg name="cnn_prediction_stability_topic" value="$(arg topo_ns)$(arg cnn_detection_stability_topic)"/>
+                    <arg name="angle_to_follow_topic" value="$(arg topo_ns)$(arg angle_to_follow_topic)"/>
+                    <arg name="corrected_angle_topic" value="$(arg topo_ns)$(arg oa_corrected_angle_topic)"/>
+                    <arg name="topological_navigation_plot_topic" value="$(arg topological_navigation_plot_topic)"/>
+                </include>
+            </group>
+        </group>
+    </group>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot_launch)/rviz/nextgen.rviz"></node>
+</launch>

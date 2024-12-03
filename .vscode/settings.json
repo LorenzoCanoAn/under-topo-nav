@@ -1,6 +1,7 @@
 {
     "python.analysis.extraPaths": [
         "./gallery_detection/src",
-        "./dataset_generation/src"
+        "./dataset_generation/src",
+        "./topological_mapping/src"
     ]
 }

@@ -14,41 +14,37 @@ class LaserData:
 
 class ObstacleAvoidanceNode:
     def __init__(self):
-        self._input_topic = rospy.get_param("~input_topic", default="/desired_bearing")
-        self._output_topic = rospy.get_param(
-            "~output_topic", default="/corrected_bearing"
-        )
         self.passthrough = rospy.get_param("~passthrough", default=False)
         self.block = False
         self.laser_data = LaserData()
         self.angle_publisher = rospy.Publisher(
-            self._output_topic, std_msgs.Float32, queue_size=1
+            "output_corrected_angle", std_msgs.Float32, queue_size=1
         )
 
         # PLOTTING TOPICS
         self._final_angle_value_publisher = rospy.Publisher(
-            "/oa_final_weight", std_msgs.Float32MultiArray, queue_size=1
+            "output_final_weights", std_msgs.Float32MultiArray, queue_size=1
         )
         self._desired_angle_weight_publisher = rospy.Publisher(
-            "/oa_desired_angle_weight", std_msgs.Float32MultiArray, queue_size=1
+            "output_desired_angle_weights", std_msgs.Float32MultiArray, queue_size=1
         )
         self._scanner_weight_publisher = rospy.Publisher(
-            "/oa_laser_scan_weight", std_msgs.Float32MultiArray, queue_size=1
+            "output_laser_scan_weights", std_msgs.Float32MultiArray, queue_size=1
         )
         self._angles_publisher = rospy.Publisher(
-            "/oa_angles", std_msgs.Float32MultiArray, queue_size=1
+            "output_angles", std_msgs.Float32MultiArray, queue_size=1
         )
         self._final_angle_value_message = std_msgs.Float32MultiArray()
         self._desired_angle_weight_message = std_msgs.Float32MultiArray()
         self._scanner_weight_message = std_msgs.Float32MultiArray()
         self._angles_message = std_msgs.Float32MultiArray()
         rospy.Subscriber(
-            self._input_topic,
+            "input_desired_angle",
             std_msgs.Float32,
             callback=self.angle_callback,
             queue_size=1,
         )
-        rospy.Subscriber("/scan", sensor_msgs.LaserScan, callback=self.scanner_callback)
+        rospy.Subscriber("input_scan", sensor_msgs.LaserScan, callback=self.scanner_callback)
 
     def angle_callback(self, msg):
         if self.passthrough:

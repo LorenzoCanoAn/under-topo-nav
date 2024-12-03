@@ -1,9 +1,9 @@
+#!/usr/bin/python3
 import rospy
 from gallery_tracking.msg import TrackedGalleries
 import numpy as np
 from std_msgs.msg import Float32, String
 import actionlib
-from topological_navigation.msg import topo_navigateAction, topo_navigateFeedback, topo_navigateGoal, topo_navigateResult
 from gallery_detection_ros.msg import DetectionVectorStability
 from nav_msgs.msg import Odometry
 from time import time, sleep
@@ -76,14 +76,15 @@ class TopologicalNavigationNode:
         self.current_instruction: Instruction = None
         self.current_state = None
         rospy.init_node("topological_navigation_node")
-        self.angle_publisher = rospy.Publisher("/angle_to_follow", Float32, queue_size=1)
-        self.state_publisher = rospy.Publisher("/current_state", String, queue_size=1)
+        self.angle_publisher = rospy.Publisher("output_angle_to_follow_topic", Float32, queue_size=1)
+        self.state_publisher = rospy.Publisher("output_current_state_topic", String, queue_size=1)
+        self.feedback_publisher = rospy.Publisher("output_feedback_topic", String, queue_size=1)
+        self.result_publisher = rospy.Publisher("output_result_topic", String, queue_size=1)
         self.change_state(S.WAITING_FOR_INSTRUCTIONS)
-        self.server = actionlib.SimpleActionServer("topo_navigate", topo_navigateAction, self.action_callback, False)
-        self.server.start()
-        rospy.Subscriber("tracked_galleries", TrackedGalleries, self.tracked_galleries_callback)
-        rospy.Subscriber("/is_detection_stable", DetectionVectorStability, self.stability_callback)
-        rospy.Subscriber("/odometry/filtered", Odometry, self.odometry_callback)
+        rospy.Subscriber("input_tracked_galleries_topic", TrackedGalleries, self.tracked_galleries_callback)
+        rospy.Subscriber("input_stability_topic", DetectionVectorStability, self.stability_callback)
+        rospy.Subscriber("input_odometry_topic", Odometry, self.odometry_callback)
+        rospy.Subscriber("input_topological_instructions_topic", String, self.instructions_callback)
 
     def select_new_back_gallery(self):
         distances_to_back = get_distances_to_angle(np.pi, np.array(self.current_galleries.angles))
@@ -124,9 +125,9 @@ class TopologicalNavigationNode:
         self.state_publisher.publish(state_string)
         self.state = new_state
 
-    def parse_instructions(self, instructions: list[str]):
+    def parse_instructions(self, instructions: str):
         self.instructions = []
-        for instruction in instructions:
+        for instruction in instructions.split(";"):
             self.instructions.append(Instruction.from_str(instruction))
 
     def gallery_id_closest_to_angle(self, angle, threshold=False):
@@ -183,19 +184,17 @@ class TopologicalNavigationNode:
         elif self.state == S.SELECTING_INSTRUCTION:
             if self.current_instruction_n == len(self.instructions):
                 self.current_instruction = None
-                self.server.set_succeeded(topo_navigateResult(True))
+                self.result_publisher.publish(String("success"))
                 self.change_state(S.FINISHED)
             else:
                 self.current_instruction = self.instructions[self.current_instruction_n]
                 self.current_instruction.startup()
-                feed = topo_navigateFeedback()
-                feed.n_completed = self.current_instruction_n
-                self.server.publish_feedback(feed)
+                self.feedback_publisher.publish(String(str(self.current_instruction_n)))
                 self.change_state(S.EXECUTING_INSTRUCTION)
         elif self.state == S.EXECUTING_INSTRUCTION:
             result = self.current_instruction.execute()
             if result == InstructionResult.FINISHED_NOT_OK:
-                self.server.set_aborted(topo_navigateResult(True))
+                self.result_publisher.publish("error")
                 self.change_state(S.FINISHED)
             elif result == InstructionResult.FINISHED_OK:
                 self.change_state(S.FINISHED_INSTRUCTION)
@@ -225,8 +224,8 @@ class TopologicalNavigationNode:
         self.set_galstate()
         self.state_machine_iteration()
 
-    def action_callback(self, msg: topo_navigateGoal):
-        self.parse_instructions(msg.topological_instructions)
+    def instructions_callback(self, msg: String):
+        self.parse_instructions(msg.data)
         self.change_state(S.INSTRUCTIONS_RECIEVED)
         while not self.state in [S.FINISHED, S.WAITING_FOR_INSTRUCTIONS]:
             sleep(0.1)

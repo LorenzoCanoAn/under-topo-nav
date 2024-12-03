@@ -1,5 +1,0 @@
-string[] topological_instructions
----
-bool success
----
-uint32 n_completed

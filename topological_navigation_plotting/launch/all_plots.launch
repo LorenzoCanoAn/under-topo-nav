@@ -1,5 +1,28 @@
 <?xml version="1.0"?>
 <launch>
-    <node name="tracking_plotter" pkg="topological_navigation_plotting" type="nn_and_tracking_plots.py" output="log" />
+    <arg name="cnn_prediction_topic" />
+    <arg name="detected_galleries_topic" />
+    <arg name="filtered_cnn_prediction_topic"/>
+    <arg name="tracked_galleries_topic"/>
+    <arg name="topological_navigation_plot_topic"/>
+    <arg name="cnn_prediction_stability_topic"/>
+    <arg name="angle_to_follow_topic"/>
+    <arg name="corrected_angle_topic"/>
+
+    <node name="tracking_plotter" pkg="topological_navigation_plotting" type="nn_and_tracking_plots.py" output="log">
+            <remap from="input_cnn_prediction_topic" to="$(arg cnn_prediction_topic)"/>
+            <remap from="input_filtered_cnn_prediction_topic" to="$(arg filtered_cnn_prediction_topic)"/>
+            <remap from="input_detected_galleries_topic" to="$(arg detected_galleries_topic)"/>
+            <remap from="input_tracked_galleries_topic" to="$(arg tracked_galleries_topic)"/>
+            <remap from="input_is_detection_stable_topic" to="$(arg cnn_prediction_stability_topic)"/>
+            <remap from="output_plot_image" to="$(arg topological_navigation_plot_topic)"/>
+            <remap from="input_angle_to_follow_topic" to="$(arg angle_to_follow_topic)"/>
+            <remap from="input_corrected_angle_topic" to="$(arg corrected_angle_topic)"/>
+            <!--
+            <remap from="input_current_state_topic" to="$(arg )"/>
+            -->
+    </node>
+    <!--
     <node name="obstacle_avoidance_plotter" pkg="topological_navigation_plotting" type="obstacle_avoidance_plot.py" output="log" />
+    -->
 </launch>

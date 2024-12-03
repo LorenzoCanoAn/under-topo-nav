@@ -1,0 +1,31 @@
+<launch>
+    <arg name="oa_corrected_angle_topic"                    default="oa_corrected_angle"/>
+    <arg name="oa_final_weights_topic"                      default="oa_final_weights"/>
+    <arg name="oa_desired_angle_weights_topic"              default="oa_desired_angle_weights"/>
+    <arg name="oa_laser_scan_weights_topic"                 default="oa_laser_scan_weights"/>
+    <arg name="oa_angles_topic"                             default="oa_angles"/>
+    <arg name="laser_scan_topic"                            default="laser_scan"/>
+    <arg name="cmd_vel_topic"                               default="cmd_vel"/>
+    <arg name="desired_angle_topic"                         default="desired_angle"/>
+    <arg name="velocity_control_max_vel_topic"              default="velocity_control_max_vel"/>
+    <arg name="velocity_control_max_angvel_topic"           default="velocity_control_max_angvel"/>
+    <arg name="velocity_control_obstacle_detected_topic"    default="obstacle_detected"/>
+
+    <node name="obstacle_avoidance_node" pkg="heading_control" type="obstacle_avoidance.py">
+        <remap from="output_corrected_angle"        to="$(arg oa_corrected_angle_topic)"/>
+        <remap from="output_final_weights"          to="$(arg oa_final_weights_topic)"/>
+        <remap from="output_desired_angle_weights"  to="$(arg oa_desired_angle_weights_topic)"/>
+        <remap from="output_laser_scan_weights"     to="$(arg oa_laser_scan_weights_topic)"/>
+        <remap from="output_angles"                 to="$(arg oa_angles_topic)"/>
+        <remap from="input_desired_angle"           to="$(arg desired_angle_topic)"/>
+        <remap from="input_scan"                    to="$(arg laser_scan_topic)"/>
+    </node>
+
+    <node name="angle_to_vel_node" pkg="heading_control" type="angle_to_vel.py">
+        <remap from="output_cmd_vel"                to="$(arg cmd_vel_topic)"/>
+        <remap from="input_new_max_vel"             to="$(arg velocity_control_max_vel_topic)"/>
+        <remap from="input_new_max_ang_vel"         to="$(arg velocity_control_max_angvel_topic)"/>
+        <remap from="input_desired_angle"           to="$(arg oa_corrected_angle_topic)"/>
+        <remap from="input_obstacle_detected"       to="$(arg velocity_control_obstacle_detected_topic)"/>
+    </node>
+</launch>

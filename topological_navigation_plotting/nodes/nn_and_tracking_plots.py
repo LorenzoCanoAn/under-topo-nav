@@ -31,32 +31,31 @@ class Plotter:
         self._plot_on_rviz = rospy.get_param("~plot_on_rviz", True)
         self._polar = rospy.get_param("~polar", True)
         rospy.Subscriber(
-            "/gallery_detection_vector",
+            "input_cnn_prediction_topic",
             DetectionVector,
             callback=self.gallery_detection_vector_callback,
         )
         rospy.Subscriber(
-            "/filtered_detection_vector",
+            "input_filtered_cnn_prediction_topic",
             DetectionVector,
             callback=self.filtered_detection_vector_callback,
         )
         rospy.Subscriber(
-            "/currently_detected_galleries",
+            "input_detected_galleries_topic",
             DetectedGalleries,
             callback=self.detected_galleries_callback,
         )
         rospy.Subscriber(
-            "/tracked_galleries",
+            "input_tracked_galleries_topic",
             TrackedGalleries,
             callback=self.tracked_galleries_callback,
         )
-        rospy.Subscriber("/back_gallery", Float32, callback=self.back_gallery_callback)
-        rospy.Subscriber("/angle_to_follow", Float32, callback=self.followed_gallery_callback)
-        rospy.Subscriber("/corrected_angle", Float32, callback=self.corrected_angle_callback)
-        rospy.Subscriber("/is_detection_stable", DetectionVectorStability, callback=self.stability_callback)
-        rospy.Subscriber("/current_state", String, callback=self.current_state)
+        rospy.Subscriber("input_angle_to_follow_topic", Float32, callback=self.followed_gallery_callback)
+        rospy.Subscriber("input_corrected_angle_topic", Float32, callback=self.corrected_angle_callback)
+        rospy.Subscriber("input_is_detection_stable_topic", DetectionVectorStability, callback=self.stability_callback)
+        rospy.Subscriber("input_current_state_topic", String, callback=self.current_state)
         if self._plot_on_rviz:
-            self.publisher = rospy.Publisher("/nn_plot", ImageMsg, queue_size=1)
+            self.publisher = rospy.Publisher("output_plot_image", ImageMsg, queue_size=1)
         self.draw_loop()
 
     def gallery_detection_vector_callback(self, msg: DetectionVector):
@@ -84,17 +83,18 @@ class Plotter:
         self._tracked_galleries_angles = np.hstack((angles, values))
         self._tracked_galleries_ids = msg.ids
         self._updated_tracked_galleries = True
+        if msg.back_gallery >= 0:
+            back_gallery_angle = angles[msg.ids.index(msg.back_gallery)].item(0)
+            self._back_gallery = np.array([back_gallery_angle, 1.1])
+            self._updated_back_gallery = True
 
-    def back_gallery_callback(self, msg: Float32):
-        self._back_gallery = np.array([msg.data, 0.9])
-        self._updated_back_gallery = True
 
     def followed_gallery_callback(self, msg: Float32):
-        self._followed_gallery = np.array([msg.data, 0.9])
+        self._followed_gallery = np.array([msg.data, 1.1])
         self._updated_followed_gallery = True
 
     def corrected_angle_callback(self, msg: Float32):
-        self._corrected_angle = np.array([msg.data, 0.8])
+        self._corrected_angle = np.array([msg.data, 1.2])
         self._updated_corrected_angle = True
 
     def stability_callback(self, msg: DetectionVectorStability):
