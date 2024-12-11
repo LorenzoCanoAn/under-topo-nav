@@ -8,21 +8,33 @@
     <arg name="cnn_prediction_stability_topic"/>
     <arg name="angle_to_follow_topic"/>
     <arg name="corrected_angle_topic"/>
+    <arg name="current_state_topic"/>
+    <arg name="oa_angles_topic"/>
+    <arg name="scan_topic"/>
+    <arg name="oa_final_weight_topic"/>
+    <arg name="oa_desired_angle_weight_topic"/>
+    <arg name="oa_laser_scan_weight_topic"/>
+    <arg name="oa_plot_topic"/>                   
 
     <node name="tracking_plotter" pkg="topological_navigation_plotting" type="nn_and_tracking_plots.py" output="log">
-            <remap from="input_cnn_prediction_topic" to="$(arg cnn_prediction_topic)"/>
-            <remap from="input_filtered_cnn_prediction_topic" to="$(arg filtered_cnn_prediction_topic)"/>
-            <remap from="input_detected_galleries_topic" to="$(arg detected_galleries_topic)"/>
-            <remap from="input_tracked_galleries_topic" to="$(arg tracked_galleries_topic)"/>
-            <remap from="input_is_detection_stable_topic" to="$(arg cnn_prediction_stability_topic)"/>
-            <remap from="output_plot_image" to="$(arg topological_navigation_plot_topic)"/>
-            <remap from="input_angle_to_follow_topic" to="$(arg angle_to_follow_topic)"/>
-            <remap from="input_corrected_angle_topic" to="$(arg corrected_angle_topic)"/>
-            <!--
-            <remap from="input_current_state_topic" to="$(arg )"/>
-            -->
+        <remap from="input_cnn_prediction_topic"            to="$(arg cnn_prediction_topic)"/>
+        <remap from="input_filtered_cnn_prediction_topic"   to="$(arg filtered_cnn_prediction_topic)"/>
+        <remap from="input_detected_galleries_topic"        to="$(arg detected_galleries_topic)"/>
+        <remap from="input_tracked_galleries_topic"         to="$(arg tracked_galleries_topic)"/>
+        <remap from="input_is_detection_stable_topic"       to="$(arg cnn_prediction_stability_topic)"/>
+        <remap from="input_angle_to_follow_topic"           to="$(arg angle_to_follow_topic)"/>
+        <remap from="input_corrected_angle_topic"           to="$(arg corrected_angle_topic)"/>
+        <remap from="input_current_state_topic"             to="$(arg current_state_topic)"/>
+        <remap from="output_plot_image"                     to="$(arg topological_navigation_plot_topic)"/>
     </node>
-    <!--
-    <node name="obstacle_avoidance_plotter" pkg="topological_navigation_plotting" type="obstacle_avoidance_plot.py" output="log" />
-    -->
+    <node name="obstacle_avoidance_plotter" pkg="topological_navigation_plotting" type="obstacle_avoidance_plot.py" output="log" >
+        <remap from="input_oa_angles_topic"                     to="$(arg oa_angles_topic)"/>
+        <remap from="input_angle_to_follow_topic"               to="$(arg angle_to_follow_topic)"/>
+        <remap from="input_corrected_bearing_topic"             to="$(arg corrected_angle_topic)"/>
+        <remap from="input_scan_topic"                          to="$(arg scan_topic)"/>
+        <remap from="input_final_weight_topic"                  to="$(arg oa_final_weight_topic)"/>
+        <remap from="input_desired_angle_weight_topic"          to="$(arg oa_desired_angle_weight_topic)"/>
+        <remap from="input_laser_scan_weight"                   to="$(arg oa_laser_scan_weight_topic)"/>
+        <remap from="output_plot_topic"                         to="$(arg oa_plot_topic)"/>
+    </node>
 </launch>

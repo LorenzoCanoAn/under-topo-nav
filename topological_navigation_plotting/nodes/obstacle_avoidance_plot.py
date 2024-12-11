@@ -33,39 +33,39 @@ class Plotter:
         self._plot_on_window = rospy.get_param("~plot_on_window", False)
         self._plot_on_rviz = rospy.get_param("~plot_on_rviz", True)
 
-        rospy.Subscriber("/oa_angles", std_msgs.Float32MultiArray, callback=self.angles_callback)
+        rospy.Subscriber("input_oa_angles_topic", std_msgs.Float32MultiArray, callback=self.angles_callback)
 
         while not self._angles_updated:
             time.sleep(0.5)
 
         rospy.Subscriber(
-            "/angle_to_follow",
+            "input_angle_to_follow_topic",
             std_msgs.Float32,
             callback=self.desired_angle_callback,
         )
         rospy.Subscriber(
-            "/corrected_bearing",
+            "input_corrected_bearing_topic",
             std_msgs.Float32,
             callback=self.corrected_angle_callback,
         )
-        rospy.Subscriber("/scan", sensor_msgs.LaserScan, callback=self.scanner_callback)
+        rospy.Subscriber("input_scan_topic", sensor_msgs.LaserScan, callback=self.scanner_callback)
         rospy.Subscriber(
-            "/oa_final_weight",
+            "input_final_weight_topic",
             std_msgs.Float32MultiArray,
             callback=self.final_weight_callback,
         )
         rospy.Subscriber(
-            "/oa_desired_angle_weight",
+            "input_desired_angle_weight_topic",
             std_msgs.Float32MultiArray,
             callback=self.desired_angle_weight_callback,
         )
         rospy.Subscriber(
-            "/oa_laser_scan_weight",
+            "input_laser_scan_weight",
             std_msgs.Float32MultiArray,
             callback=self.laser_scan_weight_callback,
         )
         if self._plot_on_rviz:
-            self.publisher = rospy.Publisher("/oa_plot", ImageMsg, queue_size=1)
+            self.publisher = rospy.Publisher("output_plot_topic", ImageMsg, queue_size=1)
         self.draw_loop()
 
     def angles_callback(self, msg):
