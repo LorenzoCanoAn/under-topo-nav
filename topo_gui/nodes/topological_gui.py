@@ -21,7 +21,7 @@ class DirectionSelector(QWidget):
         self.init_publishers()
     
     def init_publishers(self):
-        self.topo_instructions_publisher = rospy.Publisher("output_topological_instructions", String)
+        self.topo_instructions_publisher = rospy.Publisher("output_topological_instructions", String, queue_size=1)
 
     def init_ui(self):
         # Set up the layout
