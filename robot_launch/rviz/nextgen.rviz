@@ -8,7 +8,6 @@ Panels:
         - /Status1
         - /Axes1
         - /Image2
-        - /OccupancyGrid1
       Splitter Ratio: 0.5
     Tree Height: 719
   - Class: rviz/Selection
@@ -69,8 +68,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 5.075771808624268
-        Min Value: -0.2446863353252411
+        Max Value: 5.994309425354004
+        Min Value: -0.4161348044872284
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -115,18 +114,6 @@ Visualization Manager:
       Transport Hint: raw
       Unreliable: false
       Value: true
-    - Class: octomap_rviz_plugin/OccupancyGrid
-      Enabled: false
-      Max. Height Display: 3.4028234663852886e+38
-      Max. Octree Depth: 16
-      Min. Height Display: -3.4028234663852886e+38
-      Name: OccupancyGrid
-      Octomap Topic: /cpr_husky/octomap_binary
-      Queue Size: 5
-      Value: false
-      Voxel Alpha: 1
-      Voxel Coloring: Z-Axis
-      Voxel Rendering: Occupied Voxels
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

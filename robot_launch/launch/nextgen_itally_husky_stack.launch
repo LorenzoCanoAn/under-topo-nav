@@ -106,10 +106,13 @@
                 <remap from="output_topological_instructions"  to="$(arg topological_instructions_topic)"/>
             </node>
         </group>
+        <!--
         <node name="octomap_server" type="octomap_server_node" pkg="octomap_server">
             <remap from="cloud_in" to="$(arg pointcloud_topic)"/>
             <param name="~frame_id" value="$(arg husky_namespace)/odom"></param>
         </node>
+-->
     </group>
+
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot_launch)/rviz/nextgen.rviz"></node>
 </launch>
