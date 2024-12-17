@@ -1,4 +1,4 @@
 <launch>
-    <include file="$(find robot_launch)/nextgen_itally_husky_stack.launch"/>
+    <include file="$(find robot_launch)/launch/nextgen_itally_husky_stack.launch"/>
     <include file="$(find px4_tyrion)/launch/spawn_tyrion.launch"/>
 </launch>
