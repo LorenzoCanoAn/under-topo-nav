@@ -1,4 +1,8 @@
 <launch>
-    <include file="$(find robot_launch)/launch/nextgen_itally_husky_stack.launch"/>
-    <include file="$(find px4_tyrion)/launch/spawn_tyrion.launch"/>
+    <include file="$(find robot_launch)/launch/nextgen_itally_husky_stack.launch">
+        <arg name="z" value="-1.48"/>
+    </include>
+    <include file="$(find px4_tyrion)/launch/spawn_tyrion.launch">
+        <arg name="z" value="-0.715"/>
+    </include>
 </launch>
